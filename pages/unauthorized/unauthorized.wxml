@@ -1,0 +1,1 @@
+<view class="unauthorized"><view class="mark">!</view><view class="title">{{title}}</view><view class="detail">{{detail}}</view><button wx:if="{{openId}}" class="openid" bindtap="copyOpenId">{{openId}}</button></view>

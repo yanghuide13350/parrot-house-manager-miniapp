@@ -1,0 +1,19 @@
+<page-meta page-style="{{showModal ? 'overflow: hidden;' : ''}}" />
+<view class="page fade-in">
+  <view class="page-pad safe-top head"><view><view class="eyebrow">BREEDING OPERATIONS</view><view class="title">育种管理</view></view></view>
+  <view class="page-pad" wx:if="{{pairs.length}}">
+    <view wx:for="{{pairs}}" wx:key="male.id" class="pair-card card">
+      <view class="between"><view class="species">{{item.species}}</view><status-badge status="{{item.status}}"/></view>
+      <view class="birds"><view class="bird"><image src="{{item.male.image}}" mode="aspectFill"/><text>公 · {{item.male.ringNumber}}</text></view><view class="pair-mark">+</view><view class="bird"><image src="{{item.female.image}}" mode="aspectFill"/><text>母 · {{item.female.ringNumber}}</text></view></view>
+      <view class="pair-meta"><text>配对 {{item.duration}} 天</text><text wx:if="{{item.status === 'INCUBATING'}}">孵化进行中</text></view>
+      <view class="pair-actions" wx:if="{{item.status === 'PAIRED'}}"><button class="button-light" data-male="{{item.male.id}}" bindtap="cancelPair">拆对</button><button class="button-dark" data-male="{{item.male.id}}" bindtap="openProgress">推进孵化</button></view>
+      <button wx:if="{{item.status === 'INCUBATING'}}" class="view-button" data-ring="{{item.male.ringNumber}}" bindtap="viewHatching">查看孵化进程</button>
+    </view>
+  </view>
+  <view class="page-pad breeder-pool" wx:if="{{breeders.length}}">
+    <view class="between breeder-heading"><view><view class="section-title">待配对种鸟</view><view class="pool-detail">{{breeders.length}} 只可配对成员</view></view></view>
+    <view class="breeder-grid"><view wx:for="{{breeders}}" wx:key="id" class="breeder-card card tap" data-id="{{item.id}}" bindtap="viewParrot"><image src="{{item.image}}" mode="aspectFill"/><view class="breeder-copy"><view class="breeder-name">{{item.species}}</view><view class="breeder-ring">{{item.genderLabel}} · {{item.ringNumber}}</view><view class="breeder-action">查看并配对</view></view></view></view>
+  </view>
+  <empty-state wx:if="{{!pairs.length && !breeders.length}}" title="暂无育种档案" detail="先在种群详情中将鹦鹉设置为种鸟"/>
+  <view wx:if="{{showModal}}" class="overlay" bindtap="closeModal"><view class="modal card" catchtap="noop"><view class="between"><text class="modal-title">推进繁育任务</text><text class="close" bindtap="closeModal">×</text></view><text class="modal-detail">{{selected.species}} · {{selected.male.ringNumber}} / {{selected.female.ringNumber}}</text><text class="field-label">蛋数量</text><input class="input" type="number" value="{{eggCount}}" bindinput="inputEgg"/><button class="button-dark modal-submit" disabled="{{submitting}}" bindtap="startIncubation">{{submitting ? '正在启动...' : '确认启动'}}</button></view></view>
+</view>

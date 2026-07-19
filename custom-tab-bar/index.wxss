@@ -1,0 +1,40 @@
+.tab-wrap {
+  position: fixed;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: calc(24rpx + env(safe-area-inset-bottom));
+  z-index: 999;
+  pointer-events: auto;
+}
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 108rpx;
+  padding: 14rpx 28rpx;
+  border: 1rpx solid rgba(226, 232, 240, .92);
+  border-radius: 36rpx;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 18rpx 46rpx rgba(15, 23, 42, .16);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 84rpx;
+  color: #64748b;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+
+.tab:active { opacity: .68; }
+.tab.active { color: #0f172a; background: #eef2f7; border-radius: 24rpx; }
+.mark { display: flex; align-items: center; justify-content: center; width: 48rpx; height: 48rpx; margin-bottom: 4rpx; opacity: .58; }
+.mark-image { width: 40rpx; height: 40rpx; }
+.active .mark { opacity: 1; transform: scale(1.08); }
+.dot { position: absolute; bottom: -3rpx; left: 50%; width: 8rpx; height: 8rpx; border-radius: 50%; transform: translateX(-50%); background: #0f172a; }

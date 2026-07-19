@@ -1,0 +1,7 @@
+.badge { display: inline-flex; align-items: center; padding: 6rpx 14rpx; border-radius: 12rpx; font-size: 20rpx; font-weight: 800; border: 1rpx solid transparent; }
+.status-green { color: #166534; background: #dcfce7; border-color: #bbf7d0; }
+.status-gray { color: #475569; background: #f1f5f9; border-color: #e2e8f0; }
+.status-purple { color: #6b21a8; background: #f3e8ff; border-color: #e9d5ff; }
+.status-blue { color: #1e40af; background: #dbeafe; border-color: #bfdbfe; }
+.status-rose { color: #9f1239; background: #ffe4e6; border-color: #fecdd3; }
+.status-amber { color: #92400e; background: #fef3c7; border-color: #fde68a; }

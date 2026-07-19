@@ -1,0 +1,25 @@
+<view class="page fade-in form-page">
+  <view class="page-pad safe-top form-head"><button class="back-button tap" bindtap="goBack">‹</button><view><view class="eyebrow">{{isEdit ? 'EDIT PROFILE' : 'NEW PROFILE'}}</view><view class="title">{{isEdit ? '编辑档案' : '录入档案'}}</view></view></view>
+  <view class="page-pad">
+    <view class="card media-card">
+      <view class="section-label">多媒体资产 · MEDIA</view>
+      <view class="media-actions">
+        <view class="media-action tap" data-kind="image" bindtap="chooseMedia"><view class="media-icon gray">+</view><text>拍照</text></view>
+        <view class="media-action tap" data-kind="video" bindtap="chooseMedia"><view class="media-icon blue">+</view><text>视频</text></view>
+        <view class="media-action tap" bindtap="openUrl"><view class="media-icon green">+</view><text>URL</text></view>
+        <view class="media-action tap" data-kind="local" bindtap="chooseMedia"><view class="media-icon dashed">+</view><text>本地</text></view>
+        <view wx:for="{{media}}" wx:key="assetId" class="media-preview"><image wx:if="{{item.type === 'image'}}" src="{{item.url}}" mode="aspectFill"/><video wx:else src="{{item.url}}" controls="false" object-fit="cover"/><button class="remove-media" data-index="{{index}}" bindtap="removeMedia">×</button></view>
+      </view>
+      <view wx:if="{{showUrl}}" class="url-box"><input class="input" value="{{tempUrl}}" bindinput="inputUrl" placeholder="https://..."/><view class="url-actions"><button class="button-light" bindtap="closeUrl">取消</button><button class="button-dark" disabled="{{uploading}}" bindtap="addUrl">{{uploading ? '导入中...' : '添加'}}</button></view></view>
+    </view>
+    <view class="card form-card">
+      <text class="field-label">品种名称 · SPECIES</text><input class="input" data-key="species" value="{{form.species}}" bindinput="input" placeholder="如：蓝色金刚鹦鹉"/>
+      <text class="field-label">足环编号 · RING ID</text><input class="input" data-key="ringNumber" value="{{form.ringNumber}}" bindinput="input" placeholder="输入唯一身份编码"/>
+      <text class="field-label">性别 · SEX</text><view class="gender-tabs"><text wx:for="{{genders}}" wx:key="key" data-key="{{item.key}}" bindtap="chooseGender" class="gender-tab {{form.gender === item.key ? 'active' : ''}}">{{item.label}}</text></view>
+      <view class="two-fields"><view><text class="field-label">估值 (¥)</text><input class="input" type="digit" data-key="price" value="{{form.price}}" bindinput="input" placeholder="0"/></view><view><text class="field-label">出生日期</text><picker mode="date" value="{{form.birthDate}}" bindchange="chooseDate"><view class="picker">{{form.birthDate}}</view></picker></view></view>
+      <text class="field-label">公开介绍 · PUBLIC PROFILE</text><textarea class="textarea" data-key="publicIntro" value="{{form.publicIntro}}" bindinput="input" placeholder="这部分内容会展示给买家..."/>
+      <text class="field-label">内部备注 · PRIVATE NOTES</text><textarea class="textarea" data-key="privateNotes" value="{{form.privateNotes}}" bindinput="input" placeholder="记录健康、喂养、血统等内部信息..."/>
+    </view>
+    <button class="button-dark submit" disabled="{{saving || uploading}}" bindtap="save">{{uploading ? '正在处理媒体...' : (saving ? '正在提交数据...' : (isEdit ? '保存档案更新' : '确认录入系统'))}}</button>
+  </view>
+</view>

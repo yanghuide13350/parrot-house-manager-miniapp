@@ -1,0 +1,1 @@
+<view class="badge {{statusClass}}">{{label}}</view>

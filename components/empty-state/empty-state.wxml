@@ -1,0 +1,1 @@
+<view class="empty"><view class="empty-mark">—</view><view class="empty-title">{{title}}</view><view class="empty-detail">{{detail}}</view></view>

@@ -1,0 +1,37 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/parrots/parrots",
+    "pages/breeding/breeding",
+    "pages/hatching/hatching",
+    "pages/parrot-detail/parrot-detail",
+    "pages/parrot-form/parrot-form",
+    "pages/sales-records/sales-records",
+    "pages/share/share",
+    "pages/unauthorized/unauthorized"
+  ],
+  "window": {
+    "navigationBarTitleText": "",
+    "navigationBarBackgroundColor": "#FDFBF9",
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom",
+    "backgroundColor": "#FDFBF9",
+    "backgroundTextStyle": "light",
+    "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#64748B",
+    "selectedColor": "#0F172A",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "概览" },
+      { "pagePath": "pages/parrots/parrots", "text": "种群" },
+      { "pagePath": "pages/breeding/breeding", "text": "育种" },
+      { "pagePath": "pages/hatching/hatching", "text": "孵化" }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

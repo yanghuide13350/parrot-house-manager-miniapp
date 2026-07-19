@@ -1,0 +1,1 @@
+<image class="icon" style="width: {{size}}px; height: {{size}}px;" src="/assets/icons/{{name}}.svg" mode="aspectFit" aria-label="{{alt}}" />

@@ -1,0 +1,15 @@
+<view class="page fade-in home">
+  <view class="page-pad safe-top home-head"><view><view class="eyebrow">PRO MANAGEMENT</view><view class="title">管理概览</view></view></view>
+  <view class="page-pad"><view class="revenue shadow-lg"><view class="revenue-label"><view class="live"></view> PORTFOLIO REVENUE</view><view class="revenue-value"><text>¥</text><text>{{stats.revenue}}</text></view></view></view>
+  <view class="page-pad stats-grid">
+    <view class="stat stat-blue tap" data-filter="" bindtap="goParrots"><text class="stat-num">{{stats.total}}</text><text class="stat-label">总成员</text></view>
+    <view class="stat stat-green tap" data-filter="FOR_SALE" bindtap="goParrots"><text class="stat-num">{{stats.forSale}}</text><text class="stat-label">待售库</text></view>
+    <view class="stat stat-pink tap" data-filter="SOLD" bindtap="goParrots"><text class="stat-num">{{stats.sold}}</text><text class="stat-label">已售出</text></view>
+    <view class="stat stat-beige tap" data-filter="RETURNED" bindtap="goParrots"><text class="stat-num">{{stats.returned}}</text><text class="stat-label">退换货</text></view>
+    <view class="stat stat-slate tap" data-filter="PAIRED" bindtap="goParrots"><text class="stat-num">{{stats.paired}}</text><text class="stat-label">已配对</text></view>
+    <view class="stat stat-purple tap" data-filter="INCUBATING" bindtap="goParrots"><text class="stat-num">{{stats.incubating}}</text><text class="stat-label">孵化中</text></view>
+  </view>
+  <view class="page-pad"><view class="card sales-entry tap" bindtap="goSales"><view class="sales-icon">¥</view><view class="sales-copy"><view>销售与账目库</view><text>Financials & Records</text></view><text class="chevron">›</text></view></view>
+  <view class="page-pad section"><view class="card chart-card"><view class="between"><text class="section-title">趋势洞察</text><view class="seg"><text class="seg-item {{trendMode === 'revenue' ? 'selected' : ''}}" data-mode="revenue" bindtap="setTrendMode">营收</text><text class="seg-item {{trendMode === 'volume' ? 'selected' : ''}}" data-mode="volume" bindtap="setTrendMode">数量</text></view></view><view class="chart"><canvas type="2d" id="trendCanvas" class="trend-canvas"></canvas><view class="chart-label">{{chartLabel}}</view></view></view></view>
+  <view class="page-pad section bottom-section"><view class="card distribution"><view class="between"><text class="section-title">品种库分布</text><text class="eyebrow">INVENTORY MIX</text></view><view wx:if="{{species.length}}"><view wx:for="{{species}}" wx:key="name" class="mix"><view class="between"><text>{{item.name}}</text><text class="mix-count">{{item.count}} 只 <text class="mix-percent">{{item.percent}}%</text></text></view><view class="mix-track"><view class="mix-fill" style="width: {{item.percent}}%;"></view></view></view></view><view wx:else class="empty-note">暂无数据</view></view></view>
+</view>

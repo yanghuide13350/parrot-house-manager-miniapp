@@ -1,0 +1,40 @@
+<page-meta page-style="{{showPairing || showSale || showProgress ? 'overflow: hidden;' : ''}}" />
+<view class="page fade-in detail" wx:if="{{parrot}}">
+  <view class="detail-top">
+    <button class="round-button tap" bindtap="goBack" aria-label="返回"><app-icon name="arrow-left" size="22"/></button>
+    <view class="detail-actions">
+      <button class="round-button tap" bindtap="generateShare" aria-label="分享"><app-icon name="share" size="20"/></button>
+      <button class="round-button dark tap" bindtap="edit" aria-label="编辑"><app-icon name="pencil" size="20"/></button>
+      <button class="round-button danger-button tap" bindtap="remove" aria-label="删除"><app-icon name="trash" size="20"/></button>
+    </view>
+  </view>
+
+  <swiper class="media-swiper" current="{{activeIndex}}" bindchange="swiperChange" circular="false">
+    <swiper-item wx:for="{{media}}" wx:key="url"><view class="media-item"><image wx:if="{{item.type === 'image'}}" src="{{item.url}}" mode="aspectFill"/><video wx:else src="{{item.url}}" poster="{{item.poster}}" object-fit="cover" controls="true" direction="0"/></view></swiper-item>
+  </swiper>
+  <view class="media-dots" wx:if="{{media.length > 1}}"><view wx:for="{{media}}" wx:key="url" class="media-dot {{activeIndex === index ? 'active' : ''}}"></view></view>
+
+  <view class="page-pad detail-body">
+    <view class="card profile-card">
+      <view class="between"><view><view class="profile-title">{{parrot.species}}</view><view class="profile-ring">ID: {{parrot.ringNumber}}</view></view><status-badge status="{{parrot.status}}"/></view>
+      <view class="detail-grid"><view><text>性别</text><strong>{{genderLabel}}</strong></view><view><text>年龄</text><strong>{{parrot.age}}</strong></view><view><text>健康</text><strong>优秀</strong></view><view><text>估值</text><strong>¥{{parrot.price}}</strong></view></view>
+      <view class="observation"><view class="section-label">内部备注 · PRIVATE NOTES</view><text>{{parrot.privateNotes || '暂无内部备注'}}</text></view>
+      <view wx:if="{{parrot.mate}}" class="mate"><view class="section-label">配偶详情 · PARTNER</view><text>{{parrot.mate}}</text></view>
+    </view>
+
+    <view class="action-grid">
+      <button wx:if="{{parrot.status === 'FOR_SALE'}}" class="button-light" disabled="{{submitting}}" bindtap="setBreeder">设置种鸟</button>
+      <button wx:if="{{parrot.status === 'FOR_SALE'}}" class="button-dark" disabled="{{submitting}}" bindtap="openSale">确认售出</button>
+      <button wx:if="{{parrot.status === 'BREEDER'}}" class="button-dark" disabled="{{submitting}}" bindtap="openPairing">开始配对</button>
+      <button wx:if="{{parrot.status === 'BREEDER'}}" class="button-light danger" disabled="{{submitting}}" bindtap="removeBreeder">去除种鸟</button>
+      <button wx:if="{{parrot.status === 'PAIRED'}}" class="button-dark full" bindtap="openProgress">推进孵化</button>
+      <button wx:if="{{parrot.status === 'INCUBATING'}}" class="button-dark full" bindtap="viewHatching">查看详细孵化动态</button>
+    </view>
+
+    <view class="share-entry card"><view class="tap share-main" bindtap="generateShare"><view class="section-label">SHARE PROFILE</view><text>{{shareToken ? '分享已生成，可从右上角转发' : '生成 7 天买家预览'}}</text></view><button wx:if="{{shareToken}}" class="revoke-share" disabled="{{submitting}}" bindtap="revokeShare">撤销</button><text wx:else class="chevron">›</text></view>
+  </view>
+
+  <view wx:if="{{showPairing}}" class="overlay" bindtap="closePairing"><view class="modal card" catchtap="noop"><view class="between"><text class="modal-title">选择配偶</text><text class="close" bindtap="closePairing">×</text></view><view wx:if="{{eligible.length}}" class="mate-list"><view wx:for="{{eligible}}" wx:key="id" class="mate-item {{selectedMate === item.id ? 'selected' : ''}}" data-id="{{item.id}}" bindtap="chooseMate"><image src="{{item.image}}" mode="aspectFill"/><view><view>{{item.species}}</view><text>{{item.genderLabel}} · {{item.ringNumber}}</text></view></view></view><view wx:else class="empty-note">暂无符合条件的异性种鸟</view><button class="button-dark modal-submit" disabled="{{submitting}}" bindtap="confirmPairing">{{submitting ? '正在配对...' : '确认配对'}}</button></view></view>
+  <view wx:if="{{showSale}}" class="overlay" bindtap="closeSale"><view class="modal card" catchtap="noop"><view class="between"><text class="modal-title">确认交易售出</text><text class="close" bindtap="closeSale">×</text></view><text class="field-label">买家姓名</text><input class="input" data-key="buyer" value="{{buyer}}" bindinput="inputSale" placeholder="请输入买家称呼"/><text class="field-label">成交金额</text><input class="input" type="number" data-key="price" value="{{price}}" bindinput="inputSale" placeholder="请输入实付金额"/><text class="field-label">联系方式</text><input class="input" data-key="contact" value="{{contact}}" bindinput="inputSale" placeholder="输入手机号或微信"/><button class="button-dark modal-submit" disabled="{{submitting}}" bindtap="confirmSale">{{submitting ? '正在提交...' : '确认并封存档案'}}</button></view></view>
+  <view wx:if="{{showProgress}}" class="overlay" bindtap="closeProgress"><view class="modal card" catchtap="noop"><view class="between"><text class="modal-title">推进繁育任务</text><text class="close" bindtap="closeProgress">×</text></view><text class="field-label">蛋数量</text><input class="input" type="number" value="{{eggCount}}" bindinput="inputEgg"/><button class="button-dark modal-submit" disabled="{{submitting}}" bindtap="startProgress">{{submitting ? '正在启动...' : '确认启动'}}</button></view></view>
+</view>

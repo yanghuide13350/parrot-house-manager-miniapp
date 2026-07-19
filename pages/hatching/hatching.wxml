@@ -1,0 +1,20 @@
+<page-meta page-style="{{showAdd || showUpdate ? 'overflow: hidden;' : ''}}" />
+<view class="page fade-in">
+  <view class="page-pad safe-top head">
+    <view><view class="eyebrow">HATCHING MONITOR</view><view class="title">孵化管理</view></view>
+    <button class="add-button tap" bindtap="openAdd"><app-icon name="plus" size="24"/></button>
+  </view>
+  <view class="page-pad search-row"><view class="search-box"><app-icon class="search-mark" name="search" size="20"/><input value="{{search}}" bindinput="inputSearch" placeholder="搜索父母鸟圈号..."/><text wx:if="{{search}}" class="clear" bindtap="clearSearch">×</text></view></view>
+  <view class="page-pad records" wx:if="{{records.length}}">
+    <view wx:for="{{records}}" wx:key="id" class="record card">
+      <view class="between"><view><view class="record-species">{{item.species}}</view><view class="record-rings">{{item.maleRingNumber}} × {{item.femaleRingNumber}}</view></view><view class="record-status {{item.status === 'COMPLETED' ? 'done' : ''}}">{{item.status === 'COMPLETED' ? '已完成' : '孵化中'}}</view></view>
+      <view class="progress-row"><view class="progress-track"><view class="progress-fill" style="width: {{item.eggs ? item.hatched / item.eggs * 100 : 0}}%;"></view></view><text>{{item.hatched}} / {{item.eggs}}</text></view>
+      <view class="record-meta"><text>开始于 {{item.startDate}}</text><text>{{item.status === 'COMPLETED' ? '任务已结束' : '记录出壳进度'}}</text></view>
+      <view class="record-actions" wx:if="{{item.status !== 'COMPLETED'}}"><button class="button-light" data-id="{{item.id}}" bindtap="openUpdate">更新进度</button><button class="button-dark" data-id="{{item.id}}" bindtap="complete">完成孵化</button></view>
+      <button wx:else class="remove-button" data-id="{{item.id}}" bindtap="remove">移除已完成档案</button>
+    </view>
+  </view>
+  <empty-state wx:else title="暂无孵化记录" detail="从育种管理推进任务，或手动添加记录"/>
+  <view wx:if="{{showAdd}}" class="overlay" bindtap="closeAdd"><view class="modal card" catchtap="noop"><view class="between"><text class="modal-title">添加孵化记录</text><text class="close" bindtap="closeAdd">×</text></view><text class="field-label">品种名称</text><input class="input" data-key="species" value="{{newRecord.species}}" bindinput="inputNew" placeholder="请输入品种名称"/><text class="field-label top">公鸟</text><picker range="{{maleBreeders}}" range-key="ringNumber" bindchange="chooseMale"><view class="picker">{{newRecord.maleId ? '已选择公鸟' : '选择种鸟'}}</view></picker><text class="field-label top">母鸟</text><picker range="{{femaleBreeders}}" range-key="ringNumber" bindchange="chooseFemale"><view class="picker">{{newRecord.femaleId ? '已选择母鸟' : '选择种鸟'}}</view></picker><text class="field-label top">开始日期</text><picker mode="date" value="{{newRecord.startDate}}" bindchange="chooseDate"><view class="picker">{{newRecord.startDate}}</view></picker><text class="field-label top">蛋数量</text><input class="input" type="number" data-key="eggs" value="{{newRecord.eggs}}" bindinput="inputNew"/><button class="button-dark modal-submit" disabled="{{submitting}}" bindtap="saveNew">{{submitting ? '正在保存...' : '保存孵化档案'}}</button></view></view>
+  <view wx:if="{{showUpdate}}" class="overlay" bindtap="closeUpdate"><view class="modal update-modal card" catchtap="noop"><view class="between"><text class="modal-title">更新出壳数量</text><text class="close" bindtap="closeUpdate">×</text></view><view class="stepper"><button data-diff="-1" bindtap="stepUpdate">−</button><text>{{updateValue}}</text><button data-diff="1" bindtap="stepUpdate">+</button></view><button class="button-dark modal-submit" disabled="{{submitting}}" bindtap="confirmUpdate">{{submitting ? '正在保存...' : '保存进度'}}</button></view></view>
+</view>

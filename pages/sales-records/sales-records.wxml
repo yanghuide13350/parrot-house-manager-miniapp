@@ -1,0 +1,22 @@
+<page-meta page-style="{{showReturn ? 'overflow: hidden;' : ''}}" />
+<view class="page fade-in sales-page">
+  <view class="page-pad safe-top sales-header"><button class="back-button tap" bindtap="goBack" aria-label="返回"><app-icon name="arrow-left" size="22"/></button><view><view class="eyebrow">TRANSACTION HISTORY</view><view class="title">销售档案</view></view></view>
+  <view class="page-pad">
+    <view class="sales-overview shadow-lg"><view class="overview-main"><view class="overview-label">净成交额</view><view class="overview-value">¥{{stats.revenue}}</view></view><view class="overview-stats"><view><strong>{{stats.total}}</strong><text>成交档案</text></view><view><strong>{{stats.returnRate}}%</strong><text>退货率</text></view></view></view>
+    <view class="sales-search"><app-icon class="search-mark" name="search" size="20"/><input value="{{search}}" bindinput="inputSearch" placeholder="搜索买家、圈号或品种..."/></view>
+    <view class="sales-list" wx:if="{{sales.length}}">
+      <view wx:for="{{sales}}" wx:key="id" class="sale-row {{item.returned ? 'sale-returned' : ''}}">
+        <image class="sale-image" src="{{item.image}}" mode="aspectFill"/>
+        <view class="sale-content">
+          <view class="between sale-head"><view class="sale-species">{{item.species}}</view><button class="visit {{item.visitStatus}}" data-id="{{item.id}}" bindtap="updateFollowUp">{{item.visitLabel}}</button></view>
+          <view class="sale-ring">{{item.genderLabel}} · {{item.ringNumber}}</view>
+          <view class="sale-divider"></view>
+          <view class="between sale-foot"><view><text>买家：{{item.buyer}}</text><text>日期：{{item.date}}</text><text wx:if="{{item.returned}}">已退货：{{item.returnReason}}</text></view><strong>{{item.returned ? '已退' : '¥' + item.price}}</strong></view>
+          <button wx:if="{{!item.returned}}" class="return-button" data-id="{{item.id}}" bindtap="openReturn">登记退货</button>
+        </view>
+      </view>
+    </view>
+    <empty-state wx:else title="暂无销售记录" detail="在鹦鹉详情页确认售出后，记录会显示在这里"/>
+  </view>
+  <view wx:if="{{showReturn}}" class="overlay" bindtap="closeReturn"><view class="return-modal card" catchtap="noop"><view class="between"><text class="modal-title">登记退货</text><text class="close" bindtap="closeReturn">×</text></view><text class="field-label">退货原因</text><textarea class="textarea" value="{{returnReason}}" bindinput="inputReason" placeholder="请记录退货原因..."/><button class="button-dark modal-submit" disabled="{{submitting}}" bindtap="confirmReturn">{{submitting ? '正在提交...' : '确认退货'}}</button></view></view>
+</view>
