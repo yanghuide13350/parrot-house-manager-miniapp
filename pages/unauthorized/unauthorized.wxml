@@ -1,1 +1,21 @@
-<view class="unauthorized"><view class="mark">!</view><view class="title">{{title}}</view><view class="detail">{{detail}}</view><button wx:if="{{openId}}" class="openid" bindtap="copyOpenId">{{openId}}</button></view>
+<view class="page unauthorized-page">
+  <view class="page-pad safe-top unauthorized-wrap">
+    <view class="hero-card shadow-lg">
+      <view class="hero-mark">PP</view>
+      <view class="eyebrow">{{eyebrow}}</view>
+      <view class="title unauthorized-title">{{title}}</view>
+      <view class="detail unauthorized-detail">{{detail}}</view>
+      <view wx:if="{{openId}}" class="openid-card">
+        <view class="openid-label">当前 OpenID</view>
+        <button class="openid-value tap" bindtap="copyOpenId">{{openId}}</button>
+      </view>
+      <view wx:if="{{configured && !unavailable}}" class="request-panel">
+        <view class="field-label">申请备注（必填）</view>
+        <textarea class="input note-input" maxlength="120" placeholder="例如：门店协作、销售回访、孵化记录维护" value="{{note}}" bindinput="inputNote"/>
+      </view>
+      <view class="helper">{{helper}}</view>
+      <button class="button-dark unauthorized-cta tap" loading="{{submitting}}" disabled="{{submitting || accessStatus === 'pending'}}" bindtap="submitRequest">{{cta}}</button>
+      <button wx:if="{{configured}}" class="button-light copy-cta tap" bindtap="copyOpenId">复制 OpenID</button>
+    </view>
+  </view>
+</view>

@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config'
+import { SessionDoc } from './types'
 
 const SESSION_KEY = 'parrot-pro-api-session-v1'
 let apiReady = false
@@ -31,13 +32,22 @@ function request(path: string, method: string, data?: any, authenticated = true,
 
 function loginCode(): Promise<string> { return new Promise((resolve, reject) => wx.login({ success: (result: any) => result.code ? resolve(result.code) : reject(new ApiError('UNAUTHORIZED', '微信登录失败')), fail: () => reject(new ApiError('UNAUTHORIZED', '微信登录失败')) })) }
 
-export async function getSession(): Promise<{ openId: string; authorized: boolean; configured: boolean }> {
+export async function getSession(): Promise<SessionDoc> {
   if (token()) {
     try { return await request('/api/session', 'GET') } catch (error: any) { if (error.code !== 'UNAUTHORIZED') throw error }
   }
   const result = await request('/api/auth/login', 'POST', { code: await loginCode() }, false)
   if (result.token) wx.setStorageSync(SESSION_KEY, result.token)
-  return { openId: result.openId, authorized: Boolean(result.authorized), configured: Boolean(result.configured) }
+  return {
+    openId: result.openId,
+    authorized: Boolean(result.authorized),
+    configured: Boolean(result.configured),
+    role: result.role || 'NONE',
+    accessStatus: result.accessStatus || 'none',
+    canManageAccess: Boolean(result.canManageAccess),
+    requestNote: result.requestNote || '',
+    reviewNote: result.reviewNote || ''
+  }
 }
 
 export function callManagement(action: string, input: any = {}, requestId = '') { return request('/api/manage', 'POST', { action, input, requestId }) }
@@ -46,6 +56,53 @@ export function importRemoteMedia(url: string) { return request('/api/media/impo
 
 function readChunk(filePath: string, position: number, length: number): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => wx.getFileSystemManager().readFile({ filePath, position, length, success: (result: any) => resolve(result.data), fail: (error: any) => reject(new ApiError('MEDIA_REJECTED', error.errMsg || '无法读取媒体文件')) }))
+}
+
+function getLocalFileInfo(filePath: string): Promise<{ size: number }> {
+  return new Promise((resolve, reject) => {
+    wx.getFileSystemManager().getFileInfo({
+      filePath,
+      success: (result: { size: number }) => resolve(result),
+      fail: (error: { errMsg?: string }) => reject(new ApiError('MEDIA_REJECTED', error.errMsg || '无法读取媒体文件'))
+    })
+  })
+}
+
+function getImageSize(filePath: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => wx.getImageInfo({ src: filePath, success: resolve, fail: reject }))
+}
+
+function uploadFileName(filePath: string, type: 'image' | 'video') {
+  const extension = (filePath.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const allowed = type === 'image' ? ['jpg', 'jpeg', 'png', 'webp', 'gif'] : ['mp4', 'mov', 'm4v']
+  return `${type}.${allowed.includes(extension) ? extension : type === 'image' ? 'jpg' : 'mp4'}`
+}
+
+async function compressLocalImage(filePath: string) {
+  try {
+    const { width, height } = await getImageSize(filePath)
+    const scale = Math.min(1, 1200 / Math.max(width, height))
+    return await new Promise<string>((resolve, reject) => wx.compressImage({
+      src: filePath,
+      quality: 70,
+      compressedWidth: Math.max(1, Math.round(width * scale)),
+      compressedHeight: Math.max(1, Math.round(height * scale)),
+      success: (result: { tempFilePath: string }) => resolve(result.tempFilePath),
+      fail: reject
+    }))
+  } catch { throw new ApiError('MEDIA_REJECTED', '图片转换失败，请重新选择 JPG、PNG 或 WebP 图片') }
+}
+
+async function compressLocalVideo(filePath: string, size: number) {
+  if (size <= 8 * 1024 * 1024) return filePath
+  try {
+    return await new Promise<string>((resolve, reject) => wx.compressVideo({
+      src: filePath,
+      quality: 'medium',
+      success: (result: { tempFilePath: string }) => resolve(result.tempFilePath),
+      fail: reject
+    }))
+  } catch { return filePath }
 }
 
 function uploadChunk(assetId: string, uploadId: string, partNumber: number, data: ArrayBuffer): Promise<{ partNumber: number; etag: string }> {
@@ -59,18 +116,16 @@ function uploadChunk(assetId: string, uploadId: string, partNumber: number, data
 }
 
 export async function uploadMedia(filePath: string, type: 'image' | 'video') {
-  const info = await new Promise<{ size: number }>((resolve, reject) => {
-    wx.getFileSystemManager().getFileInfo({
-      filePath,
-      success: (result: { size: number }) => resolve(result),
-      fail: (error: { errMsg?: string }) => reject(new ApiError('MEDIA_REJECTED', error.errMsg || '无法读取媒体文件'))
-    })
-  })
-  const prepared = await request('/api/media/multipart/create', 'POST', { type, size: Number(info.size || 0), fileName: filePath.split('/').pop() || `${type}.tmp`, requestId: createRequestId('media-upload') })
+  const sourceInfo = await getLocalFileInfo(filePath)
+  const preparedPath = type === 'image' ? await compressLocalImage(filePath) : await compressLocalVideo(filePath, sourceInfo.size)
+  const info = await getLocalFileInfo(preparedPath)
+  const uploadPath = type === 'image' || info.size < sourceInfo.size ? preparedPath : filePath
+  const uploadInfo = uploadPath === preparedPath ? info : sourceInfo
+  const prepared = await request('/api/media/multipart/create', 'POST', { type, size: Number(uploadInfo.size || 0), fileName: uploadFileName(uploadPath, type), requestId: createRequestId('media-upload') })
   const parts: Array<{ partNumber: number; etag: string }> = []
-  for (let position = 0, partNumber = 1; position < info.size; position += prepared.partSize, partNumber += 1) {
-    const length = Math.min(prepared.partSize, info.size - position)
-    parts.push(await uploadChunk(prepared.assetId, prepared.uploadId, partNumber, await readChunk(filePath, position, length)))
+  for (let position = 0, partNumber = 1; position < uploadInfo.size; position += prepared.partSize, partNumber += 1) {
+    const length = Math.min(prepared.partSize, uploadInfo.size - position)
+    parts.push(await uploadChunk(prepared.assetId, prepared.uploadId, partNumber, await readChunk(uploadPath, position, length)))
   }
   return request(`/api/media/multipart/${encodeURIComponent(prepared.assetId)}/complete`, 'POST', { uploadId: prepared.uploadId, parts }, true, 60000)
 }

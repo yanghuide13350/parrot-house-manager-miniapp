@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("../../utils/types");
 const store_1 = require("../../utils/store");
+const date_1 = require("../../utils/date");
 Page({
     data: { pairs: [], breeders: [], selected: null, showModal: false, eggCount: '3', submitting: false },
     onLoad() { this.unsubscribe = store_1.store.subscribe(() => this.refresh()); store_1.store.hydrate(); this.refresh(); },
@@ -21,6 +22,8 @@ Page({
         return; this.setData({ showModal: false }); this.setTabHidden(false); },
     inputEgg(event) { this.setData({ eggCount: event.detail.value }); },
     async startIncubation() {
+        if (this.data.submitting)
+            return;
         const pair = this.data.selected;
         const eggs = Number(this.data.eggCount);
         if (!pair || !Number.isInteger(eggs) || eggs < 1) {
@@ -29,7 +32,7 @@ Page({
         }
         this.setData({ submitting: true });
         try {
-            await store_1.store.addHatching({ maleRingNumber: pair.male.ringNumber, femaleRingNumber: pair.female.ringNumber, maleId: pair.male.id, femaleId: pair.female.id, species: pair.species, startDate: new Date().toISOString().slice(0, 10), eggs, hatched: 0, status: 'INCUBATING' });
+            await store_1.store.addHatching({ maleRingNumber: pair.male.ringNumber, femaleRingNumber: pair.female.ringNumber, maleId: pair.male.id, femaleId: pair.female.id, species: pair.species, startDate: (0, date_1.todayDate)(), eggs, hatched: 0, status: 'INCUBATING' });
             this.setData({ showModal: false });
             this.setTabHidden(false);
             wx.showToast({ title: `任务已启动：${eggs} 枚蛋`, icon: 'success' });
@@ -42,6 +45,8 @@ Page({
         }
     },
     cancelPair(event) {
+        if (this.data.submitting)
+            return;
         const pair = this.data.pairs.find((item) => item.male.id === event.currentTarget.dataset.male);
         if (!pair)
             return;
@@ -49,16 +54,19 @@ Page({
             wx.showToast({ title: '孵化期内禁止拆对', icon: 'none' });
             return;
         }
-        wx.showModal({ title: '确认拆对', content: `解除 ${pair.male.ringNumber} 与 ${pair.female.ringNumber} 的配对关系？`, success: async (result) => { if (!result.confirm)
-                return; try {
+        wx.showModal({ title: '确认拆对', content: `解除 ${pair.male.ringNumber} 与 ${pair.female.ringNumber} 的配对关系？`, success: async (result) => { if (!result.confirm || this.data.submitting)
+                return; this.setData({ submitting: true }); try {
                 await store_1.store.cancelPair(pair.id);
                 wx.showToast({ title: '配对已拆除', icon: 'success' });
             }
             catch (error) {
                 wx.showToast({ title: error.message || '拆对失败', icon: 'none' });
+            }
+            finally {
+                this.setData({ submitting: false });
             } } });
     },
-    viewHatching(event) { wx.navigateTo({ url: `/pages/hatching/hatching?ring=${event.currentTarget.dataset.ring}` }); },
+    viewHatching(event) { wx.setStorageSync('parrot-pro-hatching-search-intent', { ring: String(event.currentTarget.dataset.ring || ''), timestamp: Date.now() }); wx.switchTab({ url: '/pages/hatching/hatching' }); },
     viewParrot(event) { wx.navigateTo({ url: `/pages/parrot-detail/parrot-detail?id=${event.currentTarget.dataset.id}` }); },
     noop() { },
     unsubscribe: null

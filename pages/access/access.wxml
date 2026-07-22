@@ -1,0 +1,92 @@
+<page-meta page-style="{{rejectingId ? 'overflow: hidden;' : ''}}" />
+<view class="page fade-in access-page">
+  <view class="page-pad safe-top access-header">
+    <button class="back-button tap" bindtap="goBack" aria-label="返回"><app-icon name="arrow-left" size="22"/></button>
+    <view class="access-title">
+      <view class="eyebrow">ACCESS CONTROL</view>
+      <view class="title">权限管理</view>
+    </view>
+    <switch wx:if="{{sessionRole === 'OWNER'}}" class="policy-switch" color="#1e293b" checked="{{policyOpenAccess}}" disabled="{{processing === 'policy'}}" bindchange="togglePolicy" />
+  </view>
+
+  <view class="page-pad">
+    <view class="access-hero shadow-lg">
+      <view>
+        <view class="hero-label">审批与授权</view>
+        <view class="hero-value">{{pending.length}}</view>
+        <view class="hero-caption">{{policyOpenAccess ? '已开启免申请访问' : '待审核申请'}}</view>
+      </view>
+      <view class="hero-side">
+        <view><strong>{{grants.length}}</strong><text>已授权</text></view>
+        <view><strong>{{roleLabel}}</strong><text>当前身份</text></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="page-pad access-section">
+    <view class="card section-card">
+      <view class="between">
+        <text class="section-title">待审批申请</text>
+        <text class="eyebrow">PENDING</text>
+      </view>
+      <view wx:if="{{pending.length}}" class="request-list">
+        <view wx:for="{{pending}}" wx:key="id" class="request-row">
+          <view class="row-top">
+            <view class="identity">
+              <view class="openid tap" data-openid="{{item.openId}}" bindtap="copyOpenId">{{item.openIdShort}}</view>
+              <text class="meta">申请时间：{{item.requestedDate}}</text>
+            </view>
+            <view class="request-badge">待审批</view>
+          </view>
+          <view class="note">申请理由：{{item.note || '未填写申请备注'}}</view>
+          <view class="actions">
+            <button class="button-dark action-button tap" data-id="{{item.id}}" data-note="{{item.note}}" loading="{{processing === item.id}}" disabled="{{!!processing}}" bindtap="approve">同意</button>
+            <button class="button-light action-button tap" data-id="{{item.id}}" disabled="{{!!processing}}" bindtap="openReject">拒绝</button>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="empty-note">当前没有待审核申请</view>
+    </view>
+  </view>
+
+  <view class="page-pad access-section bottom-section">
+    <view class="card section-card">
+      <view class="between">
+        <text class="section-title">已授权账号</text>
+        <text class="eyebrow">ACTIVE</text>
+      </view>
+      <view wx:if="{{grants.length}}" class="grant-list">
+        <view wx:for="{{grants}}" wx:key="id" class="grant-row">
+          <view class="row-top">
+            <view class="identity">
+              <view class="openid tap" data-openid="{{item.openId}}" bindtap="copyOpenId">{{item.openIdShort}}</view>
+              <text class="meta">{{item.sourceLabel}}</text>
+            </view>
+            <view class="role-badge {{item.isAdmin ? 'role-admin' : 'role-member'}}">{{item.roleLabel}}</view>
+          </view>
+          <view class="meta-stack">
+            <text class="meta-line">{{item.createdLabel}}</text>
+            <text wx:if="{{item.requestedLabel}}" class="meta-line">{{item.requestedLabel}}</text>
+          </view>
+          <view wx:if="{{item.displayNote}}" class="note">申请理由：{{item.displayNote}}</view>
+          <view class="actions">
+            <button wx:if="{{sessionRole === 'OWNER' && item.isAdmin}}" class="button-light action-button tap" data-openid="{{item.openId}}" data-mode="unset" loading="{{processing === 'unset:' + item.openId}}" disabled="{{!!processing}}" bindtap="toggleAdmin">降为普通用户</button>
+            <button wx:if="{{sessionRole === 'OWNER' && !item.isAdmin}}" class="button-dark action-button tap" data-openid="{{item.openId}}" data-mode="set" loading="{{processing === 'set:' + item.openId}}" disabled="{{!!processing}}" bindtap="toggleAdmin">设为管理员</button>
+            <button class="button-light action-button danger tap" data-openid="{{item.openId}}" loading="{{processing === item.openId}}" disabled="{{!!processing}}" bindtap="revoke">撤销权限</button>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="empty-note">还没有已授权账号</view>
+    </view>
+  </view>
+
+  <view wx:if="{{rejectingId}}" class="overlay" bindtap="closeReject">
+    <view class="card reject-modal" catchtap="noop">
+      <view class="modal-title">填写拒绝原因</view>
+      <text class="field-label">拒绝原因</text>
+      <textarea class="input reject-textarea" maxlength="200" placeholder="可选填写，例如：当前阶段仅限内部同事使用" placeholder-style="color:#cbd5e1;font-size:20rpx;line-height:1.5;" value="{{rejectReason}}" bindinput="inputRejectReason"/>
+      <button class="button-dark modal-submit tap" loading="{{!!processing}}" disabled="{{!!processing}}" bindtap="confirmReject">确认拒绝</button>
+      <button class="button-light modal-cancel tap" disabled="{{!!processing}}" bindtap="closeReject">取消</button>
+    </view>
+  </view>
+</view>

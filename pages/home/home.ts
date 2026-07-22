@@ -12,7 +12,7 @@ Page({
     const stats = { ...dashboard.stats, revenue: Number(dashboard.stats.revenueCents || 0) / 100 }
     const latest = dashboard.trend[dashboard.trend.length - 1]
     const chartLabel = this.data.trendMode === 'revenue' ? `¥${latest ? latest.revenueCents / 100 : 0}` : `${latest ? latest.volume : 0} 只`
-    this.setData({ parrots: store.parrots, stats, species: dashboard.species, trend: dashboard.trend, chartLabel }, () => { if (this.canvasReady) this.drawTrend() })
+    this.setData({ parrots: store.parrots, stats, species: dashboard.species, trend: dashboard.trend, chartLabel, canManageAccess: Boolean(store.session && store.session.canManageAccess), accessRole: store.session && store.session.role || 'NONE' }, () => { if (this.canvasReady) this.drawTrend() })
   },
   setTrendMode(event: any) { const trendMode = event.currentTarget.dataset.mode; const latest = this.data.trend[this.data.trend.length - 1]; const chartLabel = trendMode === 'revenue' ? `¥${latest ? latest.revenueCents / 100 : 0}` : `${latest ? latest.volume : 0} 只`; this.setData({ trendMode, chartLabel }, () => this.drawTrend()) },
   drawTrend() {
@@ -34,8 +34,9 @@ Page({
       const gradient = ctx.createLinearGradient(0, 0, 0, height); gradient.addColorStop(0, 'rgba(30,41,59,.16)'); gradient.addColorStop(1, 'rgba(30,41,59,0)'); ctx.fillStyle = gradient; ctx.fill()
     })
   },
-  goParrots(event: any) { const filter = event.currentTarget.dataset.filter || ''; wx.setStorageSync('parrot-pro-filter', filter); wx.switchTab({ url: '/pages/parrots/parrots' }) },
+  goParrots(event: any) { const filter = event.currentTarget.dataset.filter || ''; wx.removeStorageSync('parrot-pro-filter'); wx.setStorageSync('parrot-pro-filter-intent', { status: filter, timestamp: Date.now() }); wx.switchTab({ url: '/pages/parrots/parrots' }) },
   goSales() { wx.navigateTo({ url: '/pages/sales-records/sales-records' }) },
+  goAccess() { wx.navigateTo({ url: '/pages/access/access' }) },
   unsubscribe: null as any,
   canvasReady: false
 })

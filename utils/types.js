@@ -23,4 +23,4 @@ exports.GENDER_LABEL = { MALE: '公', FEMALE: '母', UNKNOWN: '未验卡' };
 exports.STATUS_CLASS = {
     FOR_SALE: 'status-green', SOLD: 'status-gray', RETURNED: 'status-purple', BREEDER: 'status-blue', PAIRED: 'status-rose', INCUBATING: 'status-amber'
 };
-exports.PLACEHOLDER_IMAGE = '/assets/parrots/blue-macaw.svg';
+exports.PLACEHOLDER_IMAGE = '/assets/parrots/default-placeholder.png';

@@ -9,6 +9,8 @@ export interface MediaItem {
   type: 'image' | 'video'
   url: string
   fileID?: string
+  thumbnailUrl?: string
+  thumbnailFileID?: string
   poster?: string
   posterFileID?: string
   name?: string
@@ -26,6 +28,8 @@ export interface ParrotDoc {
   birthDate: string
   image: string
   media: MediaItem[]
+  coverType?: 'image' | 'video' | 'placeholder'
+  coverVideoUrl?: string
   publicIntro: string
   privateNotes: string
   desc?: string
@@ -92,6 +96,58 @@ export interface DashboardData {
   trend: Array<{ month: string; revenueCents: number; volume: number }>
 }
 
+export type AccessRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'NONE'
+export type AccessStatus = 'none' | 'pending' | 'rejected' | 'active'
+
+export interface SessionDoc {
+  openId: string
+  configured: boolean
+  authorized: boolean
+  role: AccessRole
+  accessStatus: AccessStatus
+  canManageAccess: boolean
+  requestNote?: string
+  reviewNote?: string
+  token?: string
+}
+
+export interface AccessRequestDoc {
+  id: string
+  openId: string
+  note: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  requestedAt: string
+  reviewedAt?: string
+  reviewedBy?: string
+  reviewNote?: string
+}
+
+export interface AccessPolicyDoc {
+  openAccess: boolean
+  updatedAt?: string
+  updatedBy?: string
+}
+
+export interface AccessGrantDoc {
+  id: string
+  openId: string
+  role: 'ADMIN' | 'MEMBER'
+  note: string
+  status: 'ACTIVE' | 'DISABLED'
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  requestedAt?: string
+  requestNote?: string
+  source?: 'database' | 'env'
+}
+
+export interface AccessListDoc {
+  policy: AccessPolicyDoc
+  pending: AccessRequestDoc[]
+  grants: AccessGrantDoc[]
+}
+
 export const STATUS_LABEL: Record<ParrotStatusCode, string> = {
   FOR_SALE: '待售', SOLD: '已售', RETURNED: '退货', BREEDER: '种鸟', PAIRED: '已配对', INCUBATING: '孵化中'
 }
@@ -100,4 +156,4 @@ export const STATUS_CLASS: Record<ParrotStatusCode, string> = {
   FOR_SALE: 'status-green', SOLD: 'status-gray', RETURNED: 'status-purple', BREEDER: 'status-blue', PAIRED: 'status-rose', INCUBATING: 'status-amber'
 }
 
-export const PLACEHOLDER_IMAGE = '/assets/parrots/blue-macaw.svg'
+export const PLACEHOLDER_IMAGE = '/assets/parrots/default-placeholder.png'

@@ -4,9 +4,10 @@ const cloud_1 = require("../../utils/cloud");
 const types_1 = require("../../utils/types");
 const navigation_1 = require("../../utils/navigation");
 Page({
-    data: { parrot: null, media: [], invalid: false, loading: true, activeIndex: 0, token: '' },
+    data: { parrot: null, media: [], invalid: false, loading: true, activeIndex: 0, token: '', shareTopStyle: '' },
     async onLoad(options) {
         const token = String(options.token || '');
+        this.syncTopBar();
         if (!token) {
             this.setData({ invalid: true, loading: false });
             return;
@@ -24,6 +25,16 @@ Page({
         catch (error) {
             this.setData({ invalid: true, loading: false, token });
         }
+    },
+    onShow() { this.syncTopBar(); },
+    syncTopBar() {
+        const menu = typeof wx.getMenuButtonBoundingClientRect === 'function' ? wx.getMenuButtonBoundingClientRect() : null;
+        if (!menu) {
+            this.setData({ shareTopStyle: '' });
+            return;
+        }
+        const top = Math.max(menu.bottom + 14, 34);
+        this.setData({ shareTopStyle: `top:${top}px;left:20px;right:20px;` });
     },
     swiperChange(event) { this.setData({ activeIndex: event.detail.current }); },
     onShareAppMessage() { var _a, _b; return { title: `${((_a = this.data.parrot) === null || _a === void 0 ? void 0 : _a.species) || 'Parrot Pro'} · 官方档案`, path: `/pages/share/share?token=${encodeURIComponent(this.data.token)}`, imageUrl: (_b = this.data.parrot) === null || _b === void 0 ? void 0 : _b.image }; },

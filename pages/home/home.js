@@ -15,7 +15,7 @@ Page({
         const stats = { ...dashboard.stats, revenue: Number(dashboard.stats.revenueCents || 0) / 100 };
         const latest = dashboard.trend[dashboard.trend.length - 1];
         const chartLabel = this.data.trendMode === 'revenue' ? `¥${latest ? latest.revenueCents / 100 : 0}` : `${latest ? latest.volume : 0} 只`;
-        this.setData({ parrots: store_1.store.parrots, stats, species: dashboard.species, trend: dashboard.trend, chartLabel }, () => { if (this.canvasReady)
+        this.setData({ parrots: store_1.store.parrots, stats, species: dashboard.species, trend: dashboard.trend, chartLabel, canManageAccess: Boolean(store_1.store.session && store_1.store.session.canManageAccess), accessRole: store_1.store.session && store_1.store.session.role || 'NONE' }, () => { if (this.canvasReady)
             this.drawTrend(); });
     },
     setTrendMode(event) { const trendMode = event.currentTarget.dataset.mode; const latest = this.data.trend[this.data.trend.length - 1]; const chartLabel = trendMode === 'revenue' ? `¥${latest ? latest.revenueCents / 100 : 0}` : `${latest ? latest.volume : 0} 只`; this.setData({ trendMode, chartLabel }, () => this.drawTrend()); },
@@ -65,8 +65,9 @@ Page({
             ctx.fill();
         });
     },
-    goParrots(event) { const filter = event.currentTarget.dataset.filter || ''; wx.setStorageSync('parrot-pro-filter', filter); wx.switchTab({ url: '/pages/parrots/parrots' }); },
+    goParrots(event) { const filter = event.currentTarget.dataset.filter || ''; wx.removeStorageSync('parrot-pro-filter'); wx.setStorageSync('parrot-pro-filter-intent', { status: filter, timestamp: Date.now() }); wx.switchTab({ url: '/pages/parrots/parrots' }); },
     goSales() { wx.navigateTo({ url: '/pages/sales-records/sales-records' }); },
+    goAccess() { wx.navigateTo({ url: '/pages/access/access' }); },
     unsubscribe: null,
     canvasReady: false
 });

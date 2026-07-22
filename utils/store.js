@@ -10,9 +10,11 @@ class Store {
         this.hatchingRecords = [];
         this.salesRecords = [];
         this.dashboard = emptyDashboard();
+        this.session = null;
         this.lastError = '';
         this.listeners = [];
         this.loading = null;
+        this.refreshQueued = false;
     }
     subscribe(listener) { this.listeners.push(listener); return () => { this.listeners = this.listeners.filter(item => item !== listener); }; }
     emit() { this.listeners.forEach(listener => listener()); }
@@ -24,17 +26,31 @@ class Store {
         this.dashboard = snapshot.dashboard || emptyDashboard();
         this.emit();
     }
+    setSession(session) {
+        this.session = session;
+        this.emit();
+    }
     hydrate(force = false) {
-        if (this.loading && !force)
-            return this.loading;
+        if (this.loading) {
+            if (!force)
+                return this.loading;
+            this.refreshQueued = true;
+            return this.loading.then(() => {
+                if (!this.refreshQueued)
+                    return;
+                this.refreshQueued = false;
+                return this.hydrate(true);
+            });
+        }
         this.loading = (async () => {
             try {
                 if (!repository_1.repository.currentSession())
-                    await repository_1.repository.session();
+                    this.setSession(await repository_1.repository.session());
                 const cached = repository_1.repository.loadCache();
                 if (cached && !this.parrots.length)
                     this.apply(cached);
                 this.apply(await repository_1.repository.bootstrap());
+                this.setSession(repository_1.repository.currentSession());
                 this.lastError = '';
             }
             catch (error) {

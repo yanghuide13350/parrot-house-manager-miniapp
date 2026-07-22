@@ -2,9 +2,10 @@ import { GenderCode, MediaItem } from '../../utils/types'
 import { store } from '../../utils/store'
 import { importRemoteMedia, uploadMedia } from '../../utils/cloud'
 import { backOrSwitchTab } from '../../utils/navigation'
+import { todayDate } from '../../utils/date'
 
 Page({
-  data: { isEdit: false, id: '', media: [] as MediaItem[], showUrl: false, tempUrl: '', saving: false, uploading: false, form: { species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: new Date().toISOString().slice(0, 10), publicIntro: '', privateNotes: '' }, genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
+  data: { isEdit: false, id: '', media: [] as MediaItem[], showUrl: false, tempUrl: '', saving: false, uploading: false, form: { species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: todayDate(), publicIntro: '', privateNotes: '' }, genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
   onLoad(options: any) {
     if (!options.id) return
     const parrot = store.getParrot(options.id)
@@ -18,7 +19,7 @@ Page({
     if (this.data.uploading) return
     const kind = event.currentTarget.dataset.kind
     try {
-      const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: kind === 'video' ? ['video'] : kind === 'image' ? ['image'] : ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] })
+      const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] })
       this.setData({ uploading: true })
       const media: MediaItem[] = []
       for (const item of result.tempFiles || []) {
@@ -45,6 +46,19 @@ Page({
     } catch (error: any) { wx.showToast({ title: error.message || 'URL 导入失败', icon: 'none' }) } finally { this.setData({ uploading: false }) }
   },
   removeMedia(event: any) { const media = this.data.media.slice(); media.splice(event.currentTarget.dataset.index, 1); this.setData({ media }) },
+  previewMedia(event: any) {
+    const item = this.data.media[Number(event.currentTarget.dataset.index)]
+    if (!item || !item.url) return
+    if (item.type === 'image') {
+      const urls = this.data.media.filter((media: MediaItem) => media.type === 'image' && media.url).map((media: MediaItem) => media.url)
+      wx.previewImage({ current: item.url, urls })
+      return
+    }
+    wx.navigateTo({
+      url: '/pages/media-viewer/media-viewer',
+      success: (result: any) => result.eventChannel.emit('openMedia', { url: item.url, poster: item.poster || '', title: `${this.data.form.species || '鹦鹉'} · 视频` })
+    })
+  },
   async save() {
     const form = this.data.form
     if (!form.species || !form.ringNumber || !form.birthDate) { wx.showToast({ title: '请填写关键信息', icon: 'none' }); return }
@@ -52,8 +66,19 @@ Page({
     if (this.data.saving || this.data.uploading) return
     const normalized = String(form.ringNumber).replace(/\s+/g, '').toUpperCase()
     if (store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) { wx.showToast({ title: '圈号已存在', icon: 'none' }); return }
+    const complete: any = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes }
+    let payload = complete
+    if (this.data.isEdit) {
+      const current = store.getParrot(this.data.id)
+      if (!current) { wx.showToast({ title: '档案不存在，请刷新后重试', icon: 'none' }); return }
+      payload = {}
+      for (const key of ['species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes']) if (complete[key] !== current[key]) payload[key] = complete[key]
+      if (complete.price !== current.price) payload.price = complete.price
+      const mediaKey = (items: MediaItem[]) => JSON.stringify(items.map(item => ({ assetId: item.assetId, type: item.type })))
+      if (mediaKey(complete.media) !== mediaKey(current.media || [])) payload.media = complete.media
+      if (!Object.keys(payload).length) { wx.showToast({ title: '没有需要保存的修改', icon: 'none' }); return }
+    }
     this.setData({ saving: true })
-    const payload: any = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes }
     try {
       if (this.data.isEdit) await store.updateParrot(this.data.id, payload)
       else await store.createParrot(payload)

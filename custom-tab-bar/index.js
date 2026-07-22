@@ -1,6 +1,6 @@
 const tabs = [
     { pagePath: 'pages/home/home', label: '概览', icon: 'compass' },
-    { pagePath: 'pages/parrots/parrots', label: '种群', icon: 'feather' },
+    { pagePath: 'pages/parrots/parrots', label: '档案', icon: 'feather' },
     { pagePath: 'pages/breeding/breeding', label: '育种', icon: 'orbit' },
     { pagePath: 'pages/hatching/hatching', label: '孵化', icon: 'activity' }
 ];

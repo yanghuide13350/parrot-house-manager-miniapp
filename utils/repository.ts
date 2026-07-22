@@ -1,8 +1,8 @@
 import { callManagement, createRequestId, getSession } from './cloud'
-import { BreedingPairDoc, DashboardData, HatchingRecordDoc, MediaItem, ParrotDoc, PLACEHOLDER_IMAGE, SaleRecordDoc } from './types'
+import { AccessListDoc, DashboardData, HatchingRecordDoc, MediaItem, ParrotDoc, PLACEHOLDER_IMAGE, SaleRecordDoc, SessionDoc, BreedingPairDoc } from './types'
 
-const CACHE_VERSION = 2
-let session: { openId: string; authorized: boolean; configured: boolean } | null = null
+const CACHE_VERSION = 3
+let session: SessionDoc | null = null
 
 interface Snapshot {
   parrots: ParrotDoc[]
@@ -18,11 +18,20 @@ const cacheKey = () => session ? `parrot-pro-v${CACHE_VERSION}:${session.openId}
 const dateValue = (value: any) => value instanceof Date ? value.toISOString() : value ? String(value) : ''
 
 function mapMedia(items: any[]): MediaItem[] {
-  return (items || []).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID, url: item.fileID, posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }))
+  return (items || []).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID, url: item.fileID, thumbnailFileID: item.thumbnailFileID || '', thumbnailUrl: item.thumbnailFileID || '', posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }))
+}
+
+function coverMedia(media: MediaItem[]) {
+  const image = media.find(item => item.type === 'image' && item.url)
+  if (image) return { url: image.thumbnailUrl || image.url, type: 'image' as const }
+  const video = media.find(item => item.type === 'video' && item.url)
+  if (video) return { url: PLACEHOLDER_IMAGE, type: 'video' as const, videoUrl: video.url }
+  return { url: PLACEHOLDER_IMAGE, type: 'placeholder' as const }
 }
 
 function mapParrot(item: any): ParrotDoc {
   const media = mapMedia(item.media)
+  const cover = coverMedia(media)
   return {
     id: item.id,
     species: item.species,
@@ -33,8 +42,10 @@ function mapParrot(item: any): ParrotDoc {
     priceCents: Number(item.priceCents || 0),
     age: item.ageLabel || '未知',
     birthDate: item.birthDate,
-    image: media[0] && media[0].url || PLACEHOLDER_IMAGE,
+    image: cover.url,
     media,
+    coverType: cover.type,
+    coverVideoUrl: cover.videoUrl || '',
     publicIntro: item.publicIntro || '',
     privateNotes: item.privateNotes || '',
     desc: item.privateNotes || '',
@@ -47,7 +58,16 @@ function mapParrot(item: any): ParrotDoc {
 }
 
 function mapPair(item: any): BreedingPairDoc {
-  return { ...item, pairedAt: dateValue(item.pairedAt), male: mapParrot(item.male), female: mapParrot(item.female) }
+  return {
+    id: item.id,
+    maleId: item.maleId || item.male_id,
+    femaleId: item.femaleId || item.female_id,
+    status: item.status,
+    pairedAt: dateValue(item.pairedAt || item.paired_at),
+    revision: Number(item.revision || 0),
+    male: mapParrot(item.male),
+    female: mapParrot(item.female)
+  }
 }
 
 function mapHatching(item: any): HatchingRecordDoc {
@@ -56,16 +76,8 @@ function mapHatching(item: any): HatchingRecordDoc {
 
 function mapSale(item: any): SaleRecordDoc {
   const media = mapMedia(item.parrotSnapshot && item.parrotSnapshot.media)
-  return { id: item.id, parrotId: item.parrotId, species: item.parrotSnapshot.species, ringNumber: item.parrotSnapshot.ringNumber, gender: item.parrotSnapshot.gender, buyer: item.buyer, buyerContact: item.buyerContact, date: item.saleDate, price: Number(item.priceCents || 0) / 100, priceCents: Number(item.priceCents || 0), status: item.status, returnReason: item.returnReason, visitStatus: item.followUpStatus, image: media[0] && media[0].url || PLACEHOLDER_IMAGE, revision: item.revision, createdAt: dateValue(item.createdAt) }
-}
-
-async function allPages(action: string) {
-  const values: any[] = []; let cursor = ''
-  do {
-    const page = await callManagement(action, { cursor, pageSize: 100 })
-    values.push(...(page.items || [])); cursor = page.nextCursor || ''
-  } while (cursor)
-  return values
+  const cover = coverMedia(media)
+  return { id: item.id, parrotId: item.parrotId, species: item.parrotSnapshot.species, ringNumber: item.parrotSnapshot.ringNumber, gender: item.parrotSnapshot.gender, buyer: item.buyer, buyerContact: item.buyerContact, date: item.saleDate, price: Number(item.priceCents || 0) / 100, priceCents: Number(item.priceCents || 0), status: item.status, returnReason: item.returnReason, visitStatus: item.followUpStatus, image: cover.url, revision: item.revision, createdAt: dateValue(item.createdAt) }
 }
 
 async function ensureSession() {
@@ -89,6 +101,7 @@ function applyPairViews(parrots: ParrotDoc[], pairs: BreedingPairDoc[]) {
 export const repository = {
   async session() { session = await getSession(); return session },
   currentSession() { return session },
+  async refreshSession() { session = await getSession(); return session },
   loadCache(): Snapshot | null {
     if (!session || !session.authorized) return null
     const cached = wx.getStorageSync(cacheKey())
@@ -96,15 +109,23 @@ export const repository = {
   },
   async bootstrap(): Promise<Snapshot> {
     await ensureSession()
-    const [parrotValues, pairValues, hatchingValues, saleValues, dashboard] = await Promise.all([
-      allPages('parrots.list'), callManagement('breeding.listActive'), allPages('hatching.list'), allPages('sales.list'), callManagement('dashboard.get')
-    ])
-    const parrots = parrotValues.map(mapParrot); const pairs = pairValues.map(mapPair)
+    const data = await callManagement('sync.snapshot')
+    const parrots = ((data.parrots && data.parrots.items) || []).map(mapParrot)
+    const pairs = (data.pairs || []).map(mapPair)
     applyPairViews(parrots, pairs)
-    const snapshot = { parrots, pairs, hatchingRecords: hatchingValues.map(mapHatching), salesRecords: saleValues.map(mapSale), dashboard: dashboard || emptyDashboard(), syncedAt: new Date().toISOString() }
+    const snapshot = { parrots, pairs, hatchingRecords: ((data.hatching && data.hatching.items) || []).map(mapHatching), salesRecords: ((data.sales && data.sales.items) || []).map(mapSale), dashboard: data.dashboard || emptyDashboard(), syncedAt: new Date().toISOString() }
     wx.setStorageSync(cacheKey(), { version: CACHE_VERSION, ownerOpenId: session!.openId, snapshot })
     return snapshot
   },
+  accessList(): Promise<AccessListDoc> { return callManagement('access.list') },
+  requestAccess(note: string) { return callManagement('access.request', { note }, createRequestId('access-request')) },
+  myAccessStatus() { return callManagement('access.myStatus') },
+  approveAccess(requestId: string, note: string) { return callManagement('access.approve', { requestId, note }, createRequestId('access-approve')) },
+  rejectAccess(requestId: string, reviewNote: string) { return callManagement('access.reject', { requestId, reviewNote }, createRequestId('access-reject')) },
+  revokeMember(openId: string) { return callManagement('access.revokeMember', { openId }, createRequestId('access-revoke')) },
+  setAdmin(openId: string) { return callManagement('access.setAdmin', { openId }, createRequestId('access-set-admin')) },
+  unsetAdmin(openId: string) { return callManagement('access.unsetAdmin', { openId }, createRequestId('access-unset-admin')) },
+  setAccessPolicy(openAccess: boolean) { return callManagement('access.setPolicy', { openAccess }, createRequestId('access-policy')) },
   createParrot(input: any) { return callManagement('parrots.create', { species: input.species, ringNumber: input.ringNumber, gender: input.gender, birthDate: input.birthDate, priceCents: Math.round(Number(input.price || 0) * 100), publicIntro: input.publicIntro || '', privateNotes: input.privateNotes || input.desc || '', media: toApiMedia(input.media) }, createRequestId('parrot-create')) },
   updateParrot(id: string, currentRevision: number, updates: any) { return callManagement('parrots.update', { id, revision: currentRevision, updates: cleanParrotUpdates(updates) }, createRequestId('parrot-update')) },
   deleteParrot(id: string, currentRevision: number) { return callManagement('parrots.delete', { id, revision: currentRevision }, createRequestId('parrot-delete')) },

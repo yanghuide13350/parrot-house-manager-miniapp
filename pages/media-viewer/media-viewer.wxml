@@ -1,0 +1,16 @@
+<view class="viewer-page">
+  <view class="viewer-top">
+    <button class="viewer-back tap" bindtap="goBack" aria-label="返回详情"><app-icon name="arrow-left" size="22"/></button>
+    <view class="viewer-title"><text>VIDEO PREVIEW</text><text>{{title}}</text></view>
+  </view>
+  <view class="viewer-stage">
+    <video wx:if="{{url && !error}}" id="mediaViewerVideo" class="viewer-video" src="{{url}}" poster="{{poster}}" controls="true" autoplay="true" object-fit="contain" direction="0" show-center-play-btn="true" show-play-btn="true" show-fullscreen-btn="true" enable-progress-gesture="true" binderror="videoError"/>
+    <view wx:elif="{{error}}" class="viewer-error">
+      <view class="error-mark">!</view>
+      <text class="error-title">视频加载失败</text>
+      <text class="error-detail">请检查网络后重新进入播放</text>
+    </view>
+    <view wx:else class="viewer-loading"><view class="loading-ring"></view><text>正在准备视频</text></view>
+  </view>
+  <view class="viewer-foot"><text>横屏或点击全屏按钮可获得更大的播放画面</text></view>
+</view>

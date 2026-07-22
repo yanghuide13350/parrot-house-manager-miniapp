@@ -2,19 +2,25 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const types_1 = require("../../utils/types");
 const store_1 = require("../../utils/store");
+const date_1 = require("../../utils/date");
 Page({
-    data: { records: [], search: '', showAdd: false, showUpdate: false, updateRecord: null, updateValue: 0, submitting: false, newRecord: { species: '', maleId: '', femaleId: '', startDate: new Date().toISOString().slice(0, 10), eggs: '3' }, breeders: [], maleBreeders: [], femaleBreeders: [] },
+    data: { records: [], search: '', showAdd: false, showUpdate: false, updateRecord: null, updateValue: 0, submitting: false, newRecord: { species: '', maleId: '', femaleId: '', startDate: (0, date_1.todayDate)(), eggs: '3' }, breeders: [], maleBreeders: [], femaleBreeders: [] },
     onLoad(options) { this.unsubscribe = store_1.store.subscribe(() => this.refresh()); store_1.store.hydrate(); this.setData({ search: options.ring || '' }); this.refresh(); },
     onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar)
-        tabBar.setData({ selected: 3, hidden: false }); this.refresh(); },
+        tabBar.setData({ selected: 3, hidden: false }); const ring = this.consumeSearchIntent(); if (ring !== null)
+        this.setData({ search: ring }, () => this.refresh());
+    else
+        this.refresh(); },
     onUnload() { if (this.unsubscribe)
         this.unsubscribe(); },
     refresh() { const query = String(this.data.search || '').toLowerCase(); const records = store_1.store.hatchingRecords.filter(item => !query || `${item.maleRingNumber} ${item.femaleRingNumber} ${item.species}`.toLowerCase().includes(query)); const breeders = store_1.store.parrots.filter(item => item.status === types_1.ParrotStatusCode.BREEDER); this.setData({ records, breeders, maleBreeders: breeders.filter(item => item.gender === types_1.GenderCode.MALE), femaleBreeders: breeders.filter(item => item.gender === types_1.GenderCode.FEMALE) }); },
     inputSearch(event) { this.setData({ search: event.detail.value }, () => this.refresh()); },
     clearSearch() { this.setData({ search: '' }, () => this.refresh()); },
+    consumeSearchIntent() { const intent = wx.getStorageSync('parrot-pro-hatching-search-intent'); if (!intent || typeof intent !== 'object' || typeof intent.timestamp !== 'number' || Date.now() - intent.timestamp > 60000)
+        return null; wx.removeStorageSync('parrot-pro-hatching-search-intent'); return String(intent.ring || ''); },
     setTabHidden(hidden) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar)
         tabBar.setData({ hidden }); },
-    openAdd() { this.setTabHidden(true); this.setData({ showAdd: true, newRecord: { species: '', maleId: '', femaleId: '', startDate: new Date().toISOString().slice(0, 10), eggs: '3' } }); },
+    openAdd() { this.setTabHidden(true); this.setData({ showAdd: true, newRecord: { species: '', maleId: '', femaleId: '', startDate: (0, date_1.todayDate)(), eggs: '3' } }); },
     closeAdd() { if (this.data.submitting)
         return; this.setData({ showAdd: false }); this.setTabHidden(false); },
     inputNew(event) { this.setData({ [`newRecord.${event.currentTarget.dataset.key}`]: event.detail.value }); },
@@ -24,6 +30,8 @@ Page({
         this.setData({ 'newRecord.femaleId': item.id }); },
     chooseDate(event) { this.setData({ 'newRecord.startDate': event.detail.value }); },
     async saveNew() {
+        if (this.data.submitting)
+            return;
         const form = this.data.newRecord;
         const male = store_1.store.getParrot(form.maleId);
         const female = store_1.store.getParrot(form.femaleId);
@@ -53,7 +61,8 @@ Page({
     closeUpdate() { if (this.data.submitting)
         return; this.setData({ showUpdate: false }); this.setTabHidden(false); },
     stepUpdate(event) { const diff = Number(event.currentTarget.dataset.diff); this.setData({ updateValue: Math.max(0, Math.min(this.data.updateRecord.eggs, this.data.updateValue + diff)) }); },
-    async confirmUpdate() { this.setData({ submitting: true }); try {
+    async confirmUpdate() { if (this.data.submitting || !this.data.updateRecord)
+        return; this.setData({ submitting: true }); try {
         await store_1.store.updateHatching(this.data.updateRecord.id, { hatched: this.data.updateValue });
         this.setData({ showUpdate: false });
         this.setTabHidden(false);
@@ -65,21 +74,29 @@ Page({
     finally {
         this.setData({ submitting: false });
     } },
-    complete(event) { const id = event.currentTarget.dataset.id; wx.showModal({ title: '确认完成', content: '完成后父母鸟将恢复为种鸟状态。', success: async (result) => { if (!result.confirm)
-            return; try {
+    complete(event) { if (this.data.submitting)
+        return; const id = event.currentTarget.dataset.id; wx.showModal({ title: '确认完成', content: '完成后父母鸟将恢复为种鸟状态。', success: async (result) => { if (!result.confirm || this.data.submitting)
+            return; this.setData({ submitting: true }); try {
             await store_1.store.completeHatching(id);
             wx.showToast({ title: '孵化任务已完成', icon: 'success' });
         }
         catch (error) {
             wx.showToast({ title: error.message || '操作失败', icon: 'none' });
+        }
+        finally {
+            this.setData({ submitting: false });
         } } }); },
-    remove(event) { const id = event.currentTarget.dataset.id; wx.showModal({ title: '确认删除', content: '记录会从列表隐藏并保留审计。', success: async (result) => { if (!result.confirm)
-            return; try {
+    remove(event) { if (this.data.submitting)
+        return; const id = event.currentTarget.dataset.id; wx.showModal({ title: '确认删除', content: '记录会从列表隐藏并保留审计。', success: async (result) => { if (!result.confirm || this.data.submitting)
+            return; this.setData({ submitting: true }); try {
             await store_1.store.deleteHatching(id);
             wx.showToast({ title: '记录已移除', icon: 'none' });
         }
         catch (error) {
             wx.showToast({ title: error.message || '删除失败', icon: 'none' });
+        }
+        finally {
+            this.setData({ submitting: false });
         } } }); },
     noop() { },
     unsubscribe: null

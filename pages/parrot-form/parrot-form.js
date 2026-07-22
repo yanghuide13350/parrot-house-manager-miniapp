@@ -4,8 +4,9 @@ const types_1 = require("../../utils/types");
 const store_1 = require("../../utils/store");
 const cloud_1 = require("../../utils/cloud");
 const navigation_1 = require("../../utils/navigation");
+const date_1 = require("../../utils/date");
 Page({
-    data: { isEdit: false, id: '', media: [], showUrl: false, tempUrl: '', saving: false, uploading: false, form: { species: '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', birthDate: new Date().toISOString().slice(0, 10), publicIntro: '', privateNotes: '' }, genders: [{ key: types_1.GenderCode.MALE, label: '公 (Male)' }, { key: types_1.GenderCode.FEMALE, label: '母 (Female)' }, { key: types_1.GenderCode.UNKNOWN, label: '未验卡' }] },
+    data: { isEdit: false, id: '', media: [], showUrl: false, tempUrl: '', saving: false, uploading: false, form: { species: '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', birthDate: (0, date_1.todayDate)(), publicIntro: '', privateNotes: '' }, genders: [{ key: types_1.GenderCode.MALE, label: '公 (Male)' }, { key: types_1.GenderCode.FEMALE, label: '母 (Female)' }, { key: types_1.GenderCode.UNKNOWN, label: '未验卡' }] },
     onLoad(options) {
         if (!options.id)
             return;
@@ -22,7 +23,7 @@ Page({
             return;
         const kind = event.currentTarget.dataset.kind;
         try {
-            const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: kind === 'video' ? ['video'] : kind === 'image' ? ['image'] : ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] });
+            const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] });
             this.setData({ uploading: true });
             const media = [];
             for (const item of result.tempFiles || []) {
@@ -63,6 +64,20 @@ Page({
         }
     },
     removeMedia(event) { const media = this.data.media.slice(); media.splice(event.currentTarget.dataset.index, 1); this.setData({ media }); },
+    previewMedia(event) {
+        const item = this.data.media[Number(event.currentTarget.dataset.index)];
+        if (!item || !item.url)
+            return;
+        if (item.type === 'image') {
+            const urls = this.data.media.filter((media) => media.type === 'image' && media.url).map((media) => media.url);
+            wx.previewImage({ current: item.url, urls });
+            return;
+        }
+        wx.navigateTo({
+            url: '/pages/media-viewer/media-viewer',
+            success: (result) => result.eventChannel.emit('openMedia', { url: item.url, poster: item.poster || '', title: `${this.data.form.species || '鹦鹉'} · 视频` })
+        });
+    },
     async save() {
         const form = this.data.form;
         if (!form.species || !form.ringNumber || !form.birthDate) {
@@ -80,8 +95,29 @@ Page({
             wx.showToast({ title: '圈号已存在', icon: 'none' });
             return;
         }
+        const complete = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes };
+        let payload = complete;
+        if (this.data.isEdit) {
+            const current = store_1.store.getParrot(this.data.id);
+            if (!current) {
+                wx.showToast({ title: '档案不存在，请刷新后重试', icon: 'none' });
+                return;
+            }
+            payload = {};
+            for (const key of ['species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes'])
+                if (complete[key] !== current[key])
+                    payload[key] = complete[key];
+            if (complete.price !== current.price)
+                payload.price = complete.price;
+            const mediaKey = (items) => JSON.stringify(items.map(item => ({ assetId: item.assetId, type: item.type })));
+            if (mediaKey(complete.media) !== mediaKey(current.media || []))
+                payload.media = complete.media;
+            if (!Object.keys(payload).length) {
+                wx.showToast({ title: '没有需要保存的修改', icon: 'none' });
+                return;
+            }
+        }
         this.setData({ saving: true });
-        const payload = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes };
         try {
             if (this.data.isEdit)
                 await store_1.store.updateParrot(this.data.id, payload);

@@ -5,8 +5,12 @@ const repository_1 = require("./utils/repository");
 const store_1 = require("./utils/store");
 App({
     globalData: { ready: false, session: null, store: store_1.store },
-    onLaunch() {
+    onLaunch(options) {
         (0, cloud_1.initApi)();
+        if (String(options && options.path || '').replace(/^\//, '') === 'pages/share/share') {
+            this.globalData.ready = true;
+            return;
+        }
         repository_1.repository.session().then(session => {
             this.globalData.session = session;
             this.globalData.ready = true;
@@ -16,12 +20,13 @@ App({
                 store_1.store.hydrate();
             else if (!current || current.route !== 'pages/share/share')
                 wx.reLaunch({ url: `/pages/unauthorized/unauthorized?configured=${session.configured ? '1' : '0'}&openId=${encodeURIComponent(session.openId || '')}` });
-        }).catch(() => {
+        }).catch((error) => {
             this.globalData.ready = true;
             const pages = getCurrentPages();
             const current = pages[pages.length - 1];
+            const reason = encodeURIComponent(error && error.message || error && error.code || '无法连接服务器');
             if (!current || current.route !== 'pages/share/share')
-                wx.reLaunch({ url: '/pages/unauthorized/unauthorized?unavailable=1' });
+                wx.reLaunch({ url: `/pages/unauthorized/unauthorized?unavailable=1&reason=${reason}` });
         });
     },
     onShow() {

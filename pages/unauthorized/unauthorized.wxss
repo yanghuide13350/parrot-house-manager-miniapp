@@ -1,1 +1,15 @@
-.unauthorized { min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64rpx; text-align: center; background: #fdfbf9; }.mark { width: 112rpx; height: 112rpx; border-radius: 50%; color: #be123c; background: #fff1f2; font-size: 56rpx; font-weight: 900; line-height: 112rpx; }.title { margin-top: 32rpx; color: #0f172a; font-size: 38rpx; font-weight: 900; }.detail { max-width: 560rpx; margin-top: 18rpx; color: #64748b; font-size: 24rpx; font-weight: 700; line-height: 1.7; }.openid { max-width: 600rpx; height: auto; margin-top: 28rpx; padding: 22rpx 28rpx; border: 1rpx solid #e2e8f0; border-radius: 20rpx; color: #334155; background: #fff; font-size: 20rpx; font-weight: 800; line-height: 1.5; word-break: break-all; }
+.unauthorized-page { padding-bottom: 60rpx; }
+.unauthorized-wrap { min-height: 100vh; display: flex; align-items: center; }
+.hero-card { width: 100%; padding: 56rpx 42rpx 42rpx; border-radius: 48rpx; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border: 1rpx solid #eef1f4; }
+.hero-mark { width: 112rpx; height: 112rpx; border-radius: 34rpx; background: #1e293b; color: #fff; font-size: 34rpx; font-weight: 900; line-height: 112rpx; text-align: center; letter-spacing: 2rpx; }
+.unauthorized-title { margin-top: 28rpx; font-size: 46rpx; }
+.unauthorized-detail { margin-top: 18rpx; color: #64748b; font-size: 24rpx; line-height: 1.8; font-weight: 700; }
+.openid-card { margin-top: 30rpx; padding: 26rpx; border-radius: 28rpx; background: #fff; border: 1rpx solid #e2e8f0; }
+.openid-label { color: #94a3b8; font-size: 18rpx; font-weight: 800; letter-spacing: 2rpx; }
+.openid-value { width: 100%; height: auto; margin-top: 14rpx; padding: 0; justify-content: flex-start; color: #0f172a; background: transparent; font-size: 22rpx; font-weight: 900; line-height: 1.6; word-break: break-all; text-align: left; }
+.request-panel { margin-top: 28rpx; }
+.field-label { display: block; margin-bottom: 14rpx; color: #64748b; font-size: 22rpx; font-weight: 800; }
+.note-input { min-height: 180rpx; padding: 24rpx 28rpx; line-height: 1.6; }
+.helper { margin-top: 22rpx; color: #94a3b8; font-size: 20rpx; font-weight: 700; line-height: 1.7; }
+.unauthorized-cta { width: 100%; height: 92rpx; margin-top: 30rpx; font-size: 24rpx; }
+.copy-cta { width: 100%; height: 92rpx; margin-top: 16rpx; font-size: 24rpx; }

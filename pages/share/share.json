@@ -1,1 +1,1 @@
-{ "navigationBarTitleText": "买家预览" }
+{ "navigationBarTitleText": "买家预览", "usingComponents": { "app-icon": "/components/app-icon/app-icon" } }

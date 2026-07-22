@@ -1,5 +1,5 @@
 import { repository } from './repository'
-import { BreedingPairDoc, DashboardData, HatchingRecordDoc, ParrotDoc, SaleRecordDoc } from './types'
+import { BreedingPairDoc, DashboardData, HatchingRecordDoc, ParrotDoc, SaleRecordDoc, SessionDoc } from './types'
 
 type Listener = () => void
 const emptyDashboard = (): DashboardData => ({ stats: { total: 0, forSale: 0, sold: 0, returned: 0, breeder: 0, paired: 0, incubating: 0, revenueCents: 0, salesTotal: 0, returnRate: 0 }, species: [], trend: [] })
@@ -10,9 +10,11 @@ class Store {
   hatchingRecords: HatchingRecordDoc[] = []
   salesRecords: SaleRecordDoc[] = []
   dashboard: DashboardData = emptyDashboard()
+  session: SessionDoc | null = null
   lastError = ''
   private listeners: Listener[] = []
   private loading: Promise<void> | null = null
+  private refreshQueued = false
 
   subscribe(listener: Listener) { this.listeners.push(listener); return () => { this.listeners = this.listeners.filter(item => item !== listener) } }
   private emit() { this.listeners.forEach(listener => listener()) }
@@ -24,14 +26,27 @@ class Store {
     this.dashboard = snapshot.dashboard || emptyDashboard()
     this.emit()
   }
+  setSession(session: SessionDoc | null) {
+    this.session = session
+    this.emit()
+  }
   hydrate(force = false) {
-    if (this.loading && !force) return this.loading
+    if (this.loading) {
+      if (!force) return this.loading
+      this.refreshQueued = true
+      return this.loading.then(() => {
+        if (!this.refreshQueued) return
+        this.refreshQueued = false
+        return this.hydrate(true)
+      })
+    }
     this.loading = (async () => {
       try {
-        if (!repository.currentSession()) await repository.session()
+        if (!repository.currentSession()) this.setSession(await repository.session())
         const cached = repository.loadCache()
         if (cached && !this.parrots.length) this.apply(cached)
         this.apply(await repository.bootstrap())
+        this.setSession(repository.currentSession())
         this.lastError = ''
       } catch (error: any) {
         this.lastError = error && error.message || '数据加载失败'

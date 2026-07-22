@@ -7,7 +7,9 @@
     "pages/parrot-detail/parrot-detail",
     "pages/parrot-form/parrot-form",
     "pages/sales-records/sales-records",
+    "pages/access/access",
     "pages/share/share",
+    "pages/media-viewer/media-viewer",
     "pages/unauthorized/unauthorized"
   ],
   "window": {
@@ -26,7 +28,7 @@
     "backgroundColor": "#FFFFFF",
     "list": [
       { "pagePath": "pages/home/home", "text": "概览" },
-      { "pagePath": "pages/parrots/parrots", "text": "种群" },
+      { "pagePath": "pages/parrots/parrots", "text": "档案" },
       { "pagePath": "pages/breeding/breeding", "text": "育种" },
       { "pagePath": "pages/hatching/hatching", "text": "孵化" }
     ]

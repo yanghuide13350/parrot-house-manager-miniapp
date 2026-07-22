@@ -2,8 +2,7 @@
   <view class="tab-bar">
     <view wx:for="{{tabs}}" wx:key="pagePath" data-path="{{item.pagePath}}" bindtap="switchTab" class="tab {{selected === index ? 'active' : ''}}">
       <view class="mark"><image class="mark-image" src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" /></view>
-      <text>{{item.label}}</text>
-      <view wx:if="{{selected === index}}" class="dot"></view>
+      <view class="tab-label">{{item.label}}</view>
     </view>
   </view>
 </view>

@@ -4,18 +4,23 @@ import { store } from './utils/store'
 
 App({
   globalData: { ready: false, session: null, store },
-  onLaunch() {
+  onLaunch(options: any) {
     initApi()
+    if (String(options && options.path || '').replace(/^\//, '') === 'pages/share/share') {
+      this.globalData.ready = true
+      return
+    }
     repository.session().then(session => {
       this.globalData.session = session
       this.globalData.ready = true
       const pages = getCurrentPages(); const current = pages[pages.length - 1]
       if (session.authorized) store.hydrate()
       else if (!current || current.route !== 'pages/share/share') wx.reLaunch({ url: `/pages/unauthorized/unauthorized?configured=${session.configured ? '1' : '0'}&openId=${encodeURIComponent(session.openId || '')}` })
-    }).catch(() => {
+    }).catch((error: any) => {
       this.globalData.ready = true
       const pages = getCurrentPages(); const current = pages[pages.length - 1]
-      if (!current || current.route !== 'pages/share/share') wx.reLaunch({ url: '/pages/unauthorized/unauthorized?unavailable=1' })
+      const reason = encodeURIComponent(error && error.message || error && error.code || '无法连接服务器')
+      if (!current || current.route !== 'pages/share/share') wx.reLaunch({ url: `/pages/unauthorized/unauthorized?unavailable=1&reason=${reason}` })
     })
   },
   onShow() {
@@ -24,3 +29,4 @@ App({
   },
   onShareAppMessage() { return { title: 'Parrot Pro 鹦鹉专业管理', path: '/pages/home/home' } }
 })
+  

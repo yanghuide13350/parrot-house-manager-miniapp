@@ -1,14 +1,13 @@
 <view class="page fade-in form-page">
-  <view class="page-pad safe-top form-head"><button class="back-button tap" bindtap="goBack">‹</button><view><view class="eyebrow">{{isEdit ? 'EDIT PROFILE' : 'NEW PROFILE'}}</view><view class="title">{{isEdit ? '编辑档案' : '录入档案'}}</view></view></view>
+  <view class="page-pad safe-top form-head"><button class="back-button tap" bindtap="goBack" aria-label="返回"><app-icon name="arrow-left" size="22"/></button><view><view class="eyebrow">{{isEdit ? 'EDIT PROFILE' : 'NEW PROFILE'}}</view><view class="title">{{isEdit ? '编辑档案' : '录入档案'}}</view></view></view>
   <view class="page-pad">
     <view class="card media-card">
       <view class="section-label">多媒体资产 · MEDIA</view>
       <view class="media-actions">
-        <view class="media-action tap" data-kind="image" bindtap="chooseMedia"><view class="media-icon gray">+</view><text>拍照</text></view>
-        <view class="media-action tap" data-kind="video" bindtap="chooseMedia"><view class="media-icon blue">+</view><text>视频</text></view>
+        <view class="media-action tap" data-kind="camera" bindtap="chooseMedia"><view class="media-icon gray">+</view><text>拍照</text></view>
         <view class="media-action tap" bindtap="openUrl"><view class="media-icon green">+</view><text>URL</text></view>
         <view class="media-action tap" data-kind="local" bindtap="chooseMedia"><view class="media-icon dashed">+</view><text>本地</text></view>
-        <view wx:for="{{media}}" wx:key="assetId" class="media-preview"><image wx:if="{{item.type === 'image'}}" src="{{item.url}}" mode="aspectFill"/><video wx:else src="{{item.url}}" controls="false" object-fit="cover"/><button class="remove-media" data-index="{{index}}" bindtap="removeMedia">×</button></view>
+        <view wx:for="{{media}}" wx:key="assetId" class="media-preview tap" data-index="{{index}}" bindtap="previewMedia"><image wx:if="{{item.type === 'image'}}" src="{{item.url}}" mode="aspectFill" lazy-load="true"/><view wx:else class="video-preview"><video class="video-thumb" src="{{item.url}}" object-fit="cover" controls="{{false}}" autoplay="{{false}}" muted="{{true}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" show-fullscreen-btn="{{false}}" direction="0" data-index="{{index}}" catchtap="previewMedia"/><view class="video-play" data-index="{{index}}" catchtap="previewMedia">▶</view></view><view class="remove-media tap" data-index="{{index}}" catchtap="removeMedia">×</view></view>
       </view>
       <view wx:if="{{showUrl}}" class="url-box"><input class="input" value="{{tempUrl}}" bindinput="inputUrl" placeholder="https://..."/><view class="url-actions"><button class="button-light" bindtap="closeUrl">取消</button><button class="button-dark" disabled="{{uploading}}" bindtap="addUrl">{{uploading ? '导入中...' : '添加'}}</button></view></view>
     </view>

@@ -1,16 +1,21 @@
-import { GenderCode, ParrotDoc, ParrotStatusCode, STATUS_LABEL, GENDER_LABEL } from '../../utils/types'
+import { GenderCode, ParrotDoc, ParrotStatusCode, STATUS_LABEL, GENDER_LABEL, PLACEHOLDER_IMAGE } from '../../utils/types'
 import { store } from '../../utils/store'
 
 Page({
-  data: { parrots: [] as ParrotDoc[], search: '', filter: '', gender: '', status: '', minPrice: '', maxPrice: '', drawer: false, longPressed: null as any, genders: Object.keys(GENDER_LABEL).map(key => ({ key, label: GENDER_LABEL[key as GenderCode] })), statuses: Object.keys(STATUS_LABEL).map(key => ({ key, label: STATUS_LABEL[key as ParrotStatusCode] })) },
-  onLoad() { this.unsubscribe = store.subscribe(() => this.refresh()); store.hydrate(); this.setData({ filter: wx.getStorageSync('parrot-pro-filter') || '' }); this.refresh() },
-  onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ selected: 1, hidden: false }); this.refresh() },
+  data: { parrots: [] as ParrotDoc[], search: '', filter: '', filterLabel: '', gender: '', status: '', minPrice: '', maxPrice: '', drawer: false, longPressed: null as any, genders: Object.keys(GENDER_LABEL).map(key => ({ key, label: GENDER_LABEL[key as GenderCode] })), statuses: Object.keys(STATUS_LABEL).map(key => ({ key, label: STATUS_LABEL[key as ParrotStatusCode] })) },
+  onLoad() { this.unsubscribe = store.subscribe(() => this.refresh()); store.hydrate(); this.refresh() },
+  onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ selected: 1, hidden: false }); const filter = this.consumeFilterIntent(); if (filter !== null) this.resetFilterState(filter); else this.refresh() },
   onUnload() { if (this.unsubscribe) this.unsubscribe() },
-  onPullDownRefresh() { store.hydrate(); setTimeout(() => wx.stopPullDownRefresh(), 400) },
+  async onPullDownRefresh() { await store.hydrate(true); wx.stopPullDownRefresh() },
   refresh() {
     const query = String(this.data.search || '').trim().toLowerCase(); const { gender, status, minPrice, maxPrice, filter } = this.data
-    const parrots = store.parrots.filter(item => (!query || item.species.toLowerCase().includes(query) || item.ringNumber.toLowerCase().includes(query)) && (!gender || item.gender === gender) && ((!status && !filter) || item.status === (status || filter)) && (!minPrice || item.price >= Number(minPrice)) && (!maxPrice || item.price <= Number(maxPrice))).map(item => ({ ...item, genderLabel: GENDER_LABEL[item.gender] }))
-    this.setData({ parrots })
+    const activeStatus = (status || filter) as ParrotStatusCode
+    const parrots = store.parrots.filter(item => (!query || item.species.toLowerCase().includes(query) || item.ringNumber.toLowerCase().includes(query)) && (!gender || item.gender === gender) && (!activeStatus || item.status === activeStatus) && (!minPrice || item.price >= Number(minPrice)) && (!maxPrice || item.price <= Number(maxPrice))).map(item => {
+      const firstImage = (item.media || []).find(media => media.type === 'image' && media.url)
+      const firstVideo = !firstImage ? (item.media || []).find(media => media.type === 'video' && media.url) : null
+      return { ...item, image: firstImage?.thumbnailUrl || firstImage?.url || PLACEHOLDER_IMAGE, videoUrl: firstVideo?.url || '', coverType: firstImage ? 'image' : firstVideo ? 'video' : 'placeholder', genderLabel: GENDER_LABEL[item.gender] }
+    })
+    this.setData({ parrots, filterLabel: activeStatus ? STATUS_LABEL[activeStatus] || '' : '' })
   },
   inputSearch(event: any) { this.setData({ search: event.detail.value }, () => this.refresh()) },
   setTabHidden(hidden: boolean) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ hidden }) },
@@ -18,7 +23,9 @@ Page({
   chooseGender(event: any) { this.setData({ gender: this.data.gender === event.currentTarget.dataset.key ? '' : event.currentTarget.dataset.key }) },
   chooseStatus(event: any) { this.setData({ status: this.data.status === event.currentTarget.dataset.key ? '' : event.currentTarget.dataset.key }) },
   inputMin(event: any) { this.setData({ minPrice: event.detail.value }) }, inputMax(event: any) { this.setData({ maxPrice: event.detail.value }) },
-  resetFilter() { this.setData({ search: '', gender: '', status: '', minPrice: '', maxPrice: '', filter: '' }, () => { wx.removeStorageSync('parrot-pro-filter'); this.refresh() }) },
+  consumeFilterIntent() { const intent = wx.getStorageSync('parrot-pro-filter-intent'); if (!intent || typeof intent !== 'object' || typeof intent.timestamp !== 'number' || Date.now() - intent.timestamp > 60000) return null; wx.removeStorageSync('parrot-pro-filter-intent'); return String(intent.status || '') },
+  resetFilterState(status: string) { this.setData({ search: '', gender: '', status, minPrice: '', maxPrice: '', filter: '' }, () => this.refresh()) },
+  resetFilter() { this.setData({ search: '', gender: '', status: '', minPrice: '', maxPrice: '', filter: '' }, () => { wx.removeStorageSync('parrot-pro-filter'); wx.removeStorageSync('parrot-pro-filter-intent'); this.refresh() }) },
   quickReset() { this.resetFilter(); wx.showToast({ title: '筛选已重置', icon: 'none' }) },
   applyFilter() { this.setData({ filter: '', drawer: false }, () => this.refresh()); this.setTabHidden(false) },
   selectParrot(event: any) { wx.navigateTo({ url: `/pages/parrot-detail/parrot-detail?id=${event.currentTarget.dataset.id}` }) },

@@ -10,8 +10,8 @@
       <view class="between"><view><view class="record-species">{{item.species}}</view><view class="record-rings">{{item.maleRingNumber}} × {{item.femaleRingNumber}}</view></view><view class="record-status {{item.status === 'COMPLETED' ? 'done' : ''}}">{{item.status === 'COMPLETED' ? '已完成' : '孵化中'}}</view></view>
       <view class="progress-row"><view class="progress-track"><view class="progress-fill" style="width: {{item.eggs ? item.hatched / item.eggs * 100 : 0}}%;"></view></view><text>{{item.hatched}} / {{item.eggs}}</text></view>
       <view class="record-meta"><text>开始于 {{item.startDate}}</text><text>{{item.status === 'COMPLETED' ? '任务已结束' : '记录出壳进度'}}</text></view>
-      <view class="record-actions" wx:if="{{item.status !== 'COMPLETED'}}"><button class="button-light" data-id="{{item.id}}" bindtap="openUpdate">更新进度</button><button class="button-dark" data-id="{{item.id}}" bindtap="complete">完成孵化</button></view>
-      <button wx:else class="remove-button" data-id="{{item.id}}" bindtap="remove">移除已完成档案</button>
+      <view class="record-actions" wx:if="{{item.status !== 'COMPLETED'}}"><button class="button-light" disabled="{{submitting}}" data-id="{{item.id}}" bindtap="openUpdate">更新进度</button><button class="button-dark" disabled="{{submitting}}" data-id="{{item.id}}" bindtap="complete">完成孵化</button></view>
+      <button wx:else class="remove-button" disabled="{{submitting}}" data-id="{{item.id}}" bindtap="remove">移除已完成档案</button>
     </view>
   </view>
   <empty-state wx:else title="暂无孵化记录" detail="从育种管理推进任务，或手动添加记录"/>
