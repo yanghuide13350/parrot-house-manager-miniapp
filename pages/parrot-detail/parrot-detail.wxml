@@ -12,10 +12,8 @@
   <swiper class="media-swiper" current="{{activeIndex}}" bindchange="swiperChange" circular="false">
     <swiper-item wx:for="{{media}}" wx:key="url">
       <view class="media-item tap" data-index="{{index}}" bindtap="openMedia">
-        <image wx:if="{{item.type === 'image'}}" class="media-image" src="{{item.url}}" mode="aspectFill" lazy-load="true"/>
-        <video wx:else class="media-video" src="{{item.url}}" object-fit="cover" controls="{{false}}" autoplay="{{false}}" muted="{{true}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" show-fullscreen-btn="{{false}}" direction="0" data-index="{{index}}" catchtap="openMedia"/>
-        <view wx:if="{{item.type === 'video'}}" class="media-hint video-frame-hint">视频首帧 · 点击播放</view>
-        <view wx:if="{{item.type === 'image'}}" class="media-hint media-hint-image">点击查看大图</view>
+        <image class="media-image" src="{{item.url}}" mode="aspectFill" lazy-load="true"/>
+        <view class="media-hint media-hint-image">点击查看大图</view>
       </view>
     </swiper-item>
   </swiper>
@@ -27,6 +25,8 @@
       <view class="detail-grid"><view><text>性别</text><strong>{{genderLabel}}</strong></view><view><text>年龄</text><strong>{{parrot.age}}</strong></view><view><text>健康</text><strong>优秀</strong></view><view><text>估值</text><strong>¥{{parrot.price}}</strong></view></view>
       <view class="observation"><view class="section-label">内部备注 · PRIVATE NOTES</view><text>{{parrot.privateNotes || '暂无内部备注'}}</text></view>
       <view wx:if="{{parrot.mate}}" class="mate"><view class="section-label">配偶详情 · PARTNER</view><text>{{parrot.mate}}</text></view>
+      <view class="lineage-card"><view class="section-label">血统谱系 · LINEAGE</view><view class="lineage-row"><text>父鸟</text><strong>{{parrot.father ? parrot.father.species + (parrot.father.ringNumber ? '｜' + parrot.father.ringNumber : '') : '暂未录入'}}</strong></view><view class="lineage-row"><text>母鸟</text><strong>{{parrot.mother ? parrot.mother.species + (parrot.mother.ringNumber ? '｜' + parrot.mother.ringNumber : '') : '暂未录入'}}</strong></view></view>
+      <view class="clutch-card"><view class="section-label">出窝记录 · CLUTCHES</view><view wx:if="{{clutches.length}}"><view wx:for="{{clutches}}" wx:key="id" class="clutch-row"><view class="clutch-top"><strong>第{{item.clutchNo}}窝</strong><text>{{item.hatched}} / {{item.eggs}}只出壳</text></view><view class="clutch-detail"><text>配偶：{{item.partnerText}}</text><text>配对：{{item.pairingDateLabel}}</text><text>孵化：{{item.startDate}}</text></view><text class="clutch-offspring">{{item.offspringText}}</text><button wx:if="{{item.canIntake}}" class="clutch-intake" data-id="{{item.id}}" bindtap="intakeChicks">{{item.intakeLabel}}</button><text wx:elif="{{item.hatched > 0 && item.offspringRegistered}}" class="clutch-intake-done">{{item.intakeLabel}}</text></view></view><text wx:else class="empty-clutch">暂无出窝记录</text></view>
     </view>
 
     <view class="action-grid">

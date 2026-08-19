@@ -1,31 +1,50 @@
-import { GenderCode, MediaItem } from '../../utils/types'
+import { GenderCode, MediaItem, ParentInfo } from '../../utils/types'
 import { store } from '../../utils/store'
-import { importRemoteMedia, uploadMedia } from '../../utils/cloud'
+import { uploadMedia } from '../../utils/cloud'
 import { backOrSwitchTab } from '../../utils/navigation'
 import { todayDate } from '../../utils/date'
 
 Page({
-  data: { isEdit: false, id: '', media: [] as MediaItem[], showUrl: false, tempUrl: '', saving: false, uploading: false, form: { species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: todayDate(), publicIntro: '', privateNotes: '' }, genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
+  data: { isEdit: false, id: '', media: [] as MediaItem[], saving: false, uploading: false, focusedParentField: '', form: { species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: todayDate(), publicIntro: '', privateNotes: '' }, father: null as ParentInfo | null, mother: null as ParentInfo | null, maleCandidates: [] as any[], femaleCandidates: [] as any[], genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
   onLoad(options: any) {
     if (!options.id) return
     const parrot = store.getParrot(options.id)
-    if (parrot) this.setData({ isEdit: true, id: options.id, media: parrot.media || [], form: { species: parrot.species, ringNumber: parrot.ringNumber, gender: parrot.gender, price: String(parrot.price), birthDate: parrot.birthDate, publicIntro: parrot.publicIntro || '', privateNotes: parrot.privateNotes || '' } })
+    if (parrot) this.setData({ isEdit: true, id: options.id, media: parrot.media || [], father: parrot.father || null, mother: parrot.mother || null, form: { species: parrot.species, ringNumber: parrot.ringNumber, gender: parrot.gender, price: String(parrot.price), birthDate: parrot.birthDate, publicIntro: parrot.publicIntro || '', privateNotes: parrot.privateNotes || '' } })
+  },
+  onShow() { this.refreshCandidates() },
+  refreshCandidates() {
+    const available = store.parrots.filter(item => item.id !== this.data.id).map(item => ({ ...item, label: `${item.species}｜${item.ringNumber}` }))
+    this.setData({ maleCandidates: available.filter(item => item.gender === GenderCode.MALE), femaleCandidates: available.filter(item => item.gender === GenderCode.FEMALE) })
   },
   goBack() { backOrSwitchTab() },
   input(event: any) { this.setData({ [`form.${event.currentTarget.dataset.key}`]: event.detail.value }) },
   chooseGender(event: any) { this.setData({ 'form.gender': event.currentTarget.dataset.key }) },
   chooseDate(event: any) { this.setData({ 'form.birthDate': event.detail.value }) },
-  async chooseMedia(event: any) {
+  chooseParent(event: any) {
+    const role = event.currentTarget.dataset.role as 'father' | 'mother'
+    const candidates = role === 'father' ? this.data.maleCandidates : this.data.femaleCandidates
+    const parent = candidates[Number(event.detail.value)]
+    if (parent) this.setData({ [role]: { source: 'LIBRARY', id: parent.id, species: parent.species, ringNumber: parent.ringNumber } })
+  },
+  inputManualParent(event: any) {
+    const role = event.currentTarget.dataset.role as 'father' | 'mother', key = event.currentTarget.dataset.key
+    const current: any = this.data[role] || { source: 'MANUAL', species: '', ringNumber: '' }
+    // 修改带入内容即转为手工资料，避免关联的库内档案被误改。
+    this.setData({ [role]: { ...current, source: 'MANUAL', id: null, [key]: event.detail.value } })
+  },
+  focusParentField(event: any) { this.setData({ focusedParentField: event.currentTarget.dataset.focus }) },
+  blurParentField() { this.setData({ focusedParentField: '' }) },
+  clearParent(event: any) { this.setData({ [event.currentTarget.dataset.role]: null }) },
+  async chooseImage(event: any) {
     if (this.data.uploading) return
     const kind = event.currentTarget.dataset.kind
     try {
-      const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] })
+      const result = await wx.chooseImage({ count: kind === 'local' ? 9 : 1, sizeType: ['compressed'], sourceType: kind === 'local' ? ['album'] : ['camera'] })
       this.setData({ uploading: true })
       const media: MediaItem[] = []
-      for (const item of result.tempFiles || []) {
-        const type = item.fileType === 'video' ? 'video' : 'image'
-        const asset = await uploadMedia(item.tempFilePath, type)
-        media.push({ assetId: asset.assetId, type, fileID: asset.fileID, url: asset.fileID })
+      for (const filePath of result.tempFilePaths || []) {
+        const asset = await uploadMedia(filePath)
+        media.push({ assetId: asset.assetId, type: 'image', fileID: asset.fileID, url: asset.fileID })
       }
       this.setData({ media: this.data.media.concat(media) })
     } catch (error: any) {
@@ -33,31 +52,12 @@ Page({
       wx.showToast({ title: error.message || '媒体上传失败', icon: 'none' })
     } finally { this.setData({ uploading: false }) }
   },
-  openUrl() { this.setData({ showUrl: true, tempUrl: '' }) },
-  closeUrl() { this.setData({ showUrl: false }) },
-  inputUrl(event: any) { this.setData({ tempUrl: event.detail.value }) },
-  async addUrl() {
-    const url = String(this.data.tempUrl || '').trim()
-    if (!/^https:\/\//.test(url)) { wx.showToast({ title: '请输入 HTTPS 地址', icon: 'none' }); return }
-    this.setData({ uploading: true })
-    try {
-      const asset = await importRemoteMedia(url)
-      this.setData({ media: this.data.media.concat([{ assetId: asset.assetId, type: asset.type, fileID: asset.fileID, url: asset.fileID }]), showUrl: false })
-    } catch (error: any) { wx.showToast({ title: error.message || 'URL 导入失败', icon: 'none' }) } finally { this.setData({ uploading: false }) }
-  },
   removeMedia(event: any) { const media = this.data.media.slice(); media.splice(event.currentTarget.dataset.index, 1); this.setData({ media }) },
   previewMedia(event: any) {
     const item = this.data.media[Number(event.currentTarget.dataset.index)]
     if (!item || !item.url) return
-    if (item.type === 'image') {
-      const urls = this.data.media.filter((media: MediaItem) => media.type === 'image' && media.url).map((media: MediaItem) => media.url)
-      wx.previewImage({ current: item.url, urls })
-      return
-    }
-    wx.navigateTo({
-      url: '/pages/media-viewer/media-viewer',
-      success: (result: any) => result.eventChannel.emit('openMedia', { url: item.url, poster: item.poster || '', title: `${this.data.form.species || '鹦鹉'} · 视频` })
-    })
+    const urls = this.data.media.filter((media: MediaItem) => media.url).map((media: MediaItem) => media.url)
+    wx.previewImage({ current: item.url, urls })
   },
   async save() {
     const form = this.data.form
@@ -66,13 +66,14 @@ Page({
     if (this.data.saving || this.data.uploading) return
     const normalized = String(form.ringNumber).replace(/\s+/g, '').toUpperCase()
     if (store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) { wx.showToast({ title: '圈号已存在', icon: 'none' }); return }
-    const complete: any = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes }
+    if (!this.data.father || !this.data.mother || !this.data.father.species || !this.data.mother.species) { wx.showToast({ title: '请配置父鸟和母鸟', icon: 'none' }); return }
+    const complete: any = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother }
     let payload = complete
     if (this.data.isEdit) {
       const current = store.getParrot(this.data.id)
       if (!current) { wx.showToast({ title: '档案不存在，请刷新后重试', icon: 'none' }); return }
       payload = {}
-      for (const key of ['species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes']) if (complete[key] !== current[key]) payload[key] = complete[key]
+      for (const key of ['species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother']) if (JSON.stringify(complete[key]) !== JSON.stringify((current as any)[key])) payload[key] = complete[key]
       if (complete.price !== current.price) payload.price = complete.price
       const mediaKey = (items: MediaItem[]) => JSON.stringify(items.map(item => ({ assetId: item.assetId, type: item.type })))
       if (mediaKey(complete.media) !== mediaKey(current.media || [])) payload.media = complete.media

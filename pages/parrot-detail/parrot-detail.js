@@ -7,7 +7,7 @@ const date_1 = require("../../utils/date");
 const config_1 = require("../../config");
 const SHARE_CACHE_KEY = 'parrot-pro-share-cache';
 Page({
-    data: { parrot: null, genderLabel: '', media: [], activeIndex: 0, showPairing: false, showSale: false, showProgress: false, eligible: [], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
+    data: { parrot: null, genderLabel: '', media: [], clutches: [], activeIndex: 0, showPairing: false, showSale: false, showProgress: false, eligible: [], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
     onLoad(options) { wx.hideShareMenu(); this.id = options.id; this.syncTopBar(); this.restoreShareState(); this.unsubscribe = store_1.store.subscribe(() => this.refresh()); this.refresh(); },
     onUnload() { if (this.unsubscribe)
         this.unsubscribe(); },
@@ -58,22 +58,15 @@ Page({
         }
     },
     refresh() { const parrot = store_1.store.getParrot(this.id); if (!parrot)
-        return; const media = parrot.media && parrot.media.length ? parrot.media : [{ type: 'image', url: parrot.image }]; this.setData({ parrot, genderLabel: types_1.GENDER_LABEL[parrot.gender], media, price: String(parrot.price || '') }); },
+        return; const photos = (parrot.media || []).filter(item => item.type === 'image' && item.url), media = photos.length ? photos : [{ type: 'image', url: parrot.image }], clutches = store_1.store.hatchingRecords.filter(item => item.maleId === this.id || item.femaleId === this.id).sort((a, b) => { const paired = String(a.pairingDate || a.startDate || a.createdAt || '').localeCompare(String(b.pairingDate || b.startDate || b.createdAt || '')); if (paired)
+            return paired; const hatched = String(a.startDate || '').localeCompare(String(b.startDate || '')); return hatched || String(a.createdAt || '').localeCompare(String(b.createdAt || '')); }).map((item, index) => { const isMale = item.maleId === this.id, partnerSpecies = isMale ? item.femaleSpecies : item.maleSpecies, partnerRing = isMale ? item.femaleRingNumber : item.maleRingNumber, registered = Number(item.offspringRegistered || 0); return { ...item, clutchNo: index + 1, partnerText: `${partnerSpecies || '配偶'}${partnerRing ? `｜${partnerRing}` : ''}`, pairingDateLabel: item.pairingDate ? String(item.pairingDate).slice(0, 10) : '未记录', offspringText: (item.offspringGroups || []).map(group => `${group.species} ${group.count}只`).join('、') || '暂未录入品种明细', canIntake: item.status === 'COMPLETED' && item.hatched > 0 && registered === 0, intakeLabel: registered ? `已录入 ${registered} / ${item.hatched} 只幼鸟` : `录入本窝 ${item.hatched} 只幼鸟` }; }); this.setData({ parrot, genderLabel: types_1.GENDER_LABEL[parrot.gender], media, clutches, price: String(parrot.price || '') }); },
     swiperChange(event) { this.setData({ activeIndex: event.detail.current }); },
     openMedia(event) {
         const item = this.data.media[Number(event.currentTarget.dataset.index)];
         if (!item || !item.url)
             return;
-        if (item.type === 'image') {
-            const urls = this.data.media.filter((media) => media.type === 'image' && media.url).map((media) => media.url);
-            wx.previewImage({ current: item.url, urls });
-            return;
-        }
-        wx.navigateTo({
-            url: '/pages/media-viewer/media-viewer',
-            success: (result) => { var _a; return result.eventChannel.emit('openMedia', { url: item.url, poster: item.poster || '', title: `${((_a = this.data.parrot) === null || _a === void 0 ? void 0 : _a.species) || '鹦鹉'} · 视频` }); },
-            fail: () => wx.showToast({ title: '视频页面打开失败', icon: 'none' })
-        });
+        const urls = this.data.media.filter((media) => media.url).map((media) => media.url);
+        wx.previewImage({ current: item.url, urls });
     },
     goBack() { (0, navigation_1.backOrSwitchTab)(); },
     edit() { wx.navigateTo({ url: `/pages/parrot-form/parrot-form?id=${this.id}` }); },
@@ -173,6 +166,8 @@ Page({
         this.setData({ submitting: false });
     } },
     viewHatching() { wx.switchTab({ url: '/pages/hatching/hatching' }); },
+    intakeChicks(event) { const record = store_1.store.hatchingRecords.find(item => item.id === event.currentTarget.dataset.id); if (!record || record.status !== 'COMPLETED' || record.hatched < 1)
+        return; wx.navigateTo({ url: `/pages/clutch-intake/clutch-intake?id=${record.id}` }); },
     sharePublicUrl(token) { return `${String(config_1.API_BASE_URL || '').replace(/\/+$/, '')}/share/${encodeURIComponent(token)}`; },
     shareExpiryText(expiresAt) { return expiresAt ? `有效期至 ${String(expiresAt).slice(0, 10)}` : ''; },
     previewShare() { if (!this.data.shareToken)

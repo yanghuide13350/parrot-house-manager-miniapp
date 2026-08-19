@@ -9,12 +9,12 @@ const required = [
   'miniprogram/pages/breeding/breeding.wxml', 'miniprogram/pages/hatching/hatching.wxml',
   'miniprogram/pages/parrot-detail/parrot-detail.wxml', 'miniprogram/pages/parrot-form/parrot-form.wxml',
   'miniprogram/pages/sales-records/sales-records.wxml', 'miniprogram/pages/access/access.wxml', 'miniprogram/pages/share/share.wxml',
-  'miniprogram/pages/media-viewer/media-viewer.wxml',
+  'miniprogram/pages/clutch-intake/clutch-intake.wxml',
   'miniprogram/pages/unauthorized/unauthorized.wxml'
 ]
 const missing = required.filter(file => !fs.existsSync(path.join(root, file)))
 if (missing.length) { console.error(`Missing miniapp files:\n${missing.join('\n')}`); process.exit(1) }
-const compiledPages = ['home', 'parrots', 'breeding', 'hatching', 'parrot-detail', 'parrot-form', 'sales-records', 'access', 'share', 'media-viewer', 'unauthorized']
+const compiledPages = ['home', 'parrots', 'breeding', 'hatching', 'parrot-detail', 'parrot-form', 'clutch-intake', 'sales-records', 'access', 'share', 'unauthorized']
 for (const page of compiledPages) {
   const file = path.join(root, 'miniprogram', 'pages', page, `${page}.js`)
   if (!fs.existsSync(file) || !fs.readFileSync(file, 'utf8').includes('Page({')) throw new Error(`${page}.js is missing compiled page logic; run npm run build:miniapp`)

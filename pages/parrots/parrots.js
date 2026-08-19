@@ -19,8 +19,7 @@ Page({
         const activeStatus = (status || filter);
         const parrots = store_1.store.parrots.filter(item => (!query || item.species.toLowerCase().includes(query) || item.ringNumber.toLowerCase().includes(query)) && (!gender || item.gender === gender) && (!activeStatus || item.status === activeStatus) && (!minPrice || item.price >= Number(minPrice)) && (!maxPrice || item.price <= Number(maxPrice))).map(item => {
             const firstImage = (item.media || []).find(media => media.type === 'image' && media.url);
-            const firstVideo = !firstImage ? (item.media || []).find(media => media.type === 'video' && media.url) : null;
-            return { ...item, image: (firstImage === null || firstImage === void 0 ? void 0 : firstImage.thumbnailUrl) || (firstImage === null || firstImage === void 0 ? void 0 : firstImage.url) || types_1.PLACEHOLDER_IMAGE, videoUrl: (firstVideo === null || firstVideo === void 0 ? void 0 : firstVideo.url) || '', coverType: firstImage ? 'image' : firstVideo ? 'video' : 'placeholder', genderLabel: types_1.GENDER_LABEL[item.gender] };
+            return { ...item, image: (firstImage === null || firstImage === void 0 ? void 0 : firstImage.thumbnailUrl) || (firstImage === null || firstImage === void 0 ? void 0 : firstImage.url) || types_1.PLACEHOLDER_IMAGE, coverType: firstImage ? 'image' : 'placeholder', genderLabel: types_1.GENDER_LABEL[item.gender] };
         });
         this.setData({ parrots, filterLabel: activeStatus ? types_1.STATUS_LABEL[activeStatus] || '' : '' });
     },

@@ -1,0 +1,22 @@
+.form-head { display:flex; align-items:center; gap:24rpx; padding-bottom:36rpx; }
+.back-button { width:88rpx; height:88rpx; padding:0; border:1rpx solid #e2e8f0; border-radius:28rpx; background:#fff; }
+.parent-card,.chick-card { padding:34rpx; margin-bottom:24rpx; }
+.section-label,.chick-title { color:#0f172a; font-size:20rpx; font-weight:900; letter-spacing:2rpx; }
+.parents { display:grid; grid-template-columns:1fr 1fr; gap:16rpx; margin-top:24rpx; }
+.parents view { padding:20rpx; border-radius:20rpx; background:#f8fafc; }
+.parents text,.birth-row text { display:block; color:#64748b; font-size:19rpx; font-weight:700; }
+.parents strong { display:block; margin-top:8rpx; color:#0f172a; font-size:23rpx; font-weight:900; word-break:break-all; }
+.birth-row { display:flex; align-items:center; justify-content:space-between; gap:12rpx; margin-top:18rpx; padding-top:22rpx; border-top:1rpx solid #edf0f4; }
+.birth-row strong { color:#0f172a; font-size:22rpx; font-weight:900; }
+.birth-row text:last-child { color:#166534; }
+.intake-note { margin:0 4rpx 24rpx; color:#64748b; font-size:20rpx; line-height:1.6; }
+.chick-title { display:flex; justify-content:space-between; align-items:center; padding-bottom:20rpx; border-bottom:1rpx solid #edf0f4; }
+.chick-title text:last-child { color:#94a3b8; font-size:18rpx; letter-spacing:0; }
+.field-label { display:block; margin:28rpx 0 12rpx; color:#0f172a; font-size:21rpx; font-weight:900; }
+.optional { color:#94a3b8; font-weight:700; }
+.gender-tabs { display:flex; gap:8rpx; padding:8rpx; border-radius:20rpx; background:#f1f5f9; }
+.gender-tab { flex:1; padding:20rpx 6rpx; border-radius:16rpx; text-align:center; color:#64748b; font-size:21rpx; font-weight:800; }
+.gender-tab.active { color:#0f172a; background:#fff; box-shadow:0 6rpx 14rpx rgba(30,41,59,.08); }
+.textarea { width:100%; min-height:160rpx; padding:22rpx; border:1rpx solid #e2e8f0; border-radius:22rpx; background:#f8fafc; color:#0f172a; font-size:23rpx; }
+.submit { width:calc(100% - 112rpx); height:104rpx; margin:8rpx 56rpx 40rpx; font-size:27rpx; }
+.loading { color:#64748b; text-align:center; font-size:24rpx; }

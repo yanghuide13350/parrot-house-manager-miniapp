@@ -7,7 +7,7 @@ import { API_BASE_URL } from '../../config'
 const SHARE_CACHE_KEY = 'parrot-pro-share-cache'
 
 Page({
-  data: { parrot: null as any, genderLabel: '', media: [] as any[], activeIndex: 0, showPairing: false, showSale: false, showProgress: false, eligible: [] as any[], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
+  data: { parrot: null as any, genderLabel: '', media: [] as any[], clutches: [] as any[], activeIndex: 0, showPairing: false, showSale: false, showProgress: false, eligible: [] as any[], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
   onLoad(options: any) { wx.hideShareMenu(); this.id = options.id; this.syncTopBar(); this.restoreShareState(); this.unsubscribe = store.subscribe(() => this.refresh()); this.refresh() },
   onUnload() { if (this.unsubscribe) this.unsubscribe() },
   onShow() { this.syncTopBar(); this.restoreShareState(); if (this.id) this.refresh() },
@@ -53,21 +53,13 @@ Page({
       this.writeShareCache(cache)
     }
   },
-  refresh() { const parrot = store.getParrot(this.id); if (!parrot) return; const media = parrot.media && parrot.media.length ? parrot.media : [{ type: 'image', url: parrot.image }]; this.setData({ parrot, genderLabel: GENDER_LABEL[parrot.gender], media, price: String(parrot.price || '') }) },
+  refresh() { const parrot = store.getParrot(this.id); if (!parrot) return; const photos = (parrot.media || []).filter(item => item.type === 'image' && item.url); const media = photos.length ? photos : [{ type: 'image', url: parrot.image }], clutches = store.hatchingRecords.filter(item => item.maleId === this.id || item.femaleId === this.id).sort((a, b) => { const paired = String(a.pairingDate || a.startDate || a.createdAt || '').localeCompare(String(b.pairingDate || b.startDate || b.createdAt || '')); if (paired) return paired; const hatched = String(a.startDate || '').localeCompare(String(b.startDate || '')); return hatched || String(a.createdAt || '').localeCompare(String(b.createdAt || '')) }).map((item, index) => { const isMale = item.maleId === this.id, partnerSpecies = isMale ? item.femaleSpecies : item.maleSpecies, partnerRing = isMale ? item.femaleRingNumber : item.maleRingNumber, registered = Number(item.offspringRegistered || 0); return { ...item, clutchNo: index + 1, partnerText: `${partnerSpecies || '配偶'}${partnerRing ? `｜${partnerRing}` : ''}`, pairingDateLabel: item.pairingDate ? String(item.pairingDate).slice(0, 10) : '未记录', offspringText: (item.offspringGroups || []).map(group => `${group.species} ${group.count}只`).join('、') || '暂未录入品种明细', canIntake: item.status === 'COMPLETED' && item.hatched > 0 && registered === 0, intakeLabel: registered ? `已录入 ${registered} / ${item.hatched} 只幼鸟` : `录入本窝 ${item.hatched} 只幼鸟` } }); this.setData({ parrot, genderLabel: GENDER_LABEL[parrot.gender], media, clutches, price: String(parrot.price || '') }) },
   swiperChange(event: any) { this.setData({ activeIndex: event.detail.current }) },
   openMedia(event: any) {
     const item = this.data.media[Number(event.currentTarget.dataset.index)]
     if (!item || !item.url) return
-    if (item.type === 'image') {
-      const urls = this.data.media.filter((media: any) => media.type === 'image' && media.url).map((media: any) => media.url)
-      wx.previewImage({ current: item.url, urls })
-      return
-    }
-    wx.navigateTo({
-      url: '/pages/media-viewer/media-viewer',
-      success: (result: any) => result.eventChannel.emit('openMedia', { url: item.url, poster: item.poster || '', title: `${this.data.parrot?.species || '鹦鹉'} · 视频` }),
-      fail: () => wx.showToast({ title: '视频页面打开失败', icon: 'none' })
-    })
+    const urls = this.data.media.filter((media: any) => media.url).map((media: any) => media.url)
+    wx.previewImage({ current: item.url, urls })
   },
   goBack() { backOrSwitchTab() },
   edit() { wx.navigateTo({ url: `/pages/parrot-form/parrot-form?id=${this.id}` }) },
@@ -87,6 +79,7 @@ Page({
   inputEgg(event: any) { this.setData({ eggCount: event.detail.value }) },
   async startProgress() { const parrot = this.data.parrot; const pair = store.getPair(parrot.activePairId) || store.pairs.find(item => item.maleId === parrot.id || item.femaleId === parrot.id); const mateId = parrot.mateId || (pair ? pair.maleId === parrot.id ? pair.femaleId : pair.maleId : ''); const mate = mateId ? store.getParrot(mateId) : null; const eggs = Number(this.data.eggCount); if (!mate) { wx.showToast({ title: '配对关系异常，请刷新后重试', icon: 'none' }); await store.hydrate(true); return } if (!Number.isInteger(eggs) || eggs < 1) { wx.showToast({ title: '请输入正确蛋数', icon: 'none' }); return } if (this.data.submitting) return; this.setData({ submitting: true }); try { await store.addHatching({ maleRingNumber: parrot.gender === GenderCode.MALE ? parrot.ringNumber : mate.ringNumber, femaleRingNumber: parrot.gender === GenderCode.FEMALE ? parrot.ringNumber : mate.ringNumber, maleId: parrot.gender === GenderCode.MALE ? parrot.id : mate.id, femaleId: parrot.gender === GenderCode.FEMALE ? parrot.id : mate.id, species: parrot.species, startDate: todayDate(), eggs, hatched: 0, status: 'INCUBATING' }); this.setData({ showProgress: false }); wx.showToast({ title: '已启动孵化任务', icon: 'success' }) } catch (error: any) { wx.showToast({ title: error.message || '启动失败', icon: 'none' }) } finally { this.setData({ submitting: false }) } },
   viewHatching() { wx.switchTab({ url: '/pages/hatching/hatching' }) },
+  intakeChicks(event: any) { const record = store.hatchingRecords.find(item => item.id === event.currentTarget.dataset.id); if (!record || record.status !== 'COMPLETED' || record.hatched < 1) return; wx.navigateTo({ url: `/pages/clutch-intake/clutch-intake?id=${record.id}` }) },
   sharePublicUrl(token: string) { return `${String(API_BASE_URL || '').replace(/\/+$/, '')}/share/${encodeURIComponent(token)}` },
   shareExpiryText(expiresAt: string) { return expiresAt ? `有效期至 ${String(expiresAt).slice(0, 10)}` : '' },
   previewShare() { if (!this.data.shareToken) return; wx.navigateTo({ url: `/pages/share/share?token=${encodeURIComponent(this.data.shareToken)}` }) },

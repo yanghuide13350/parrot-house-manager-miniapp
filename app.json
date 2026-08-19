@@ -6,10 +6,10 @@
     "pages/hatching/hatching",
     "pages/parrot-detail/parrot-detail",
     "pages/parrot-form/parrot-form",
+    "pages/clutch-intake/clutch-intake",
     "pages/sales-records/sales-records",
     "pages/access/access",
     "pages/share/share",
-    "pages/media-viewer/media-viewer",
     "pages/unauthorized/unauthorized"
   ],
   "window": {

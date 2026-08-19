@@ -4,18 +4,24 @@
     <view class="card media-card">
       <view class="section-label">多媒体资产 · MEDIA</view>
       <view class="media-actions">
-        <view class="media-action tap" data-kind="camera" bindtap="chooseMedia"><view class="media-icon gray">+</view><text>拍照</text></view>
-        <view class="media-action tap" bindtap="openUrl"><view class="media-icon green">+</view><text>URL</text></view>
-        <view class="media-action tap" data-kind="local" bindtap="chooseMedia"><view class="media-icon dashed">+</view><text>本地</text></view>
-        <view wx:for="{{media}}" wx:key="assetId" class="media-preview tap" data-index="{{index}}" bindtap="previewMedia"><image wx:if="{{item.type === 'image'}}" src="{{item.url}}" mode="aspectFill" lazy-load="true"/><view wx:else class="video-preview"><video class="video-thumb" src="{{item.url}}" object-fit="cover" controls="{{false}}" autoplay="{{false}}" muted="{{true}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" show-fullscreen-btn="{{false}}" direction="0" data-index="{{index}}" catchtap="previewMedia"/><view class="video-play" data-index="{{index}}" catchtap="previewMedia">▶</view></view><view class="remove-media tap" data-index="{{index}}" catchtap="removeMedia">×</view></view>
+        <view class="media-action tap" data-kind="camera" bindtap="chooseImage"><view class="media-icon gray">+</view><text>拍照</text></view>
+        <view class="media-action tap" data-kind="local" bindtap="chooseImage"><view class="media-icon dashed">+</view><text>本地</text></view>
+        <view wx:for="{{media}}" wx:key="assetId" class="media-preview tap" data-index="{{index}}" bindtap="previewMedia"><image src="{{item.url}}" mode="aspectFill" lazy-load="true"/><view class="remove-media tap" data-index="{{index}}" catchtap="removeMedia">×</view></view>
       </view>
-      <view wx:if="{{showUrl}}" class="url-box"><input class="input" value="{{tempUrl}}" bindinput="inputUrl" placeholder="https://..."/><view class="url-actions"><button class="button-light" bindtap="closeUrl">取消</button><button class="button-dark" disabled="{{uploading}}" bindtap="addUrl">{{uploading ? '导入中...' : '添加'}}</button></view></view>
     </view>
     <view class="card form-card">
       <text class="field-label">品种名称 · SPECIES</text><input class="input" data-key="species" value="{{form.species}}" bindinput="input" placeholder="如：蓝色金刚鹦鹉"/>
       <text class="field-label">足环编号 · RING ID</text><input class="input" data-key="ringNumber" value="{{form.ringNumber}}" bindinput="input" placeholder="输入唯一身份编码"/>
       <text class="field-label">性别 · SEX</text><view class="gender-tabs"><text wx:for="{{genders}}" wx:key="key" data-key="{{item.key}}" bindtap="chooseGender" class="gender-tab {{form.gender === item.key ? 'active' : ''}}">{{item.label}}</text></view>
       <view class="two-fields"><view><text class="field-label">估值 (¥)</text><input class="input" type="digit" data-key="price" value="{{form.price}}" bindinput="input" placeholder="0"/></view><view><text class="field-label">出生日期</text><picker mode="date" value="{{form.birthDate}}" bindchange="chooseDate"><view class="picker">{{form.birthDate}}</view></picker></view></view>
+      <view class="lineage-section">
+        <view class="lineage-head"><text class="field-label">父鸟血统 · FATHER</text><view class="lineage-actions"><picker range="{{maleCandidates}}" range-key="label" bindchange="chooseParent" data-role="father"><text class="lineage-import">从鸟库带入</text></picker><text wx:if="{{father}}" class="lineage-reset" data-role="father" bindtap="clearParent">×</text></view></view>
+        <view class="lineage-fields"><input class="input lineage-input" data-role="father" data-key="species" data-focus="father-species" value="{{father ? father.species : ''}}" bindinput="inputManualParent" bindfocus="focusParentField" bindblur="blurParentField" placeholder="{{focusedParentField === 'father-species' ? '' : '父鸟品种'}}"/><input class="input lineage-input lineage-ring" data-role="father" data-key="ringNumber" data-focus="father-ring" value="{{father ? father.ringNumber : ''}}" bindinput="inputManualParent" bindfocus="focusParentField" bindblur="blurParentField" placeholder="{{focusedParentField === 'father-ring' ? '' : '圈号（选填）'}}"/></view>
+      </view>
+      <view class="lineage-section">
+        <view class="lineage-head"><text class="field-label">母鸟血统 · MOTHER</text><view class="lineage-actions"><picker range="{{femaleCandidates}}" range-key="label" bindchange="chooseParent" data-role="mother"><text class="lineage-import">从鸟库带入</text></picker><text wx:if="{{mother}}" class="lineage-reset" data-role="mother" bindtap="clearParent">×</text></view></view>
+        <view class="lineage-fields"><input class="input lineage-input" data-role="mother" data-key="species" data-focus="mother-species" value="{{mother ? mother.species : ''}}" bindinput="inputManualParent" bindfocus="focusParentField" bindblur="blurParentField" placeholder="{{focusedParentField === 'mother-species' ? '' : '母鸟品种'}}"/><input class="input lineage-input lineage-ring" data-role="mother" data-key="ringNumber" data-focus="mother-ring" value="{{mother ? mother.ringNumber : ''}}" bindinput="inputManualParent" bindfocus="focusParentField" bindblur="blurParentField" placeholder="{{focusedParentField === 'mother-ring' ? '' : '圈号（选填）'}}"/></view>
+      </view>
       <text class="field-label">公开介绍 · PUBLIC PROFILE</text><textarea class="textarea" data-key="publicIntro" value="{{form.publicIntro}}" bindinput="input" placeholder="这部分内容会展示给买家..."/>
       <text class="field-label">内部备注 · PRIVATE NOTES</text><textarea class="textarea" data-key="privateNotes" value="{{form.privateNotes}}" bindinput="input" placeholder="记录健康、喂养、血统等内部信息..."/>
     </view>

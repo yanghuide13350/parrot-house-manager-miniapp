@@ -18,9 +18,10 @@ Page({
                 this.setData({ invalid: true, loading: false, token });
                 return;
             }
-            const value = result.parrot;
-            const parrot = { ...value, gender: types_1.GENDER_LABEL[value.gender] || value.gender, age: value.ageLabel, price: Number(value.priceCents || 0) / 100, desc: value.publicIntro, image: value.media && value.media[0] && value.media[0].url || types_1.PLACEHOLDER_IMAGE };
-            this.setData({ parrot, media: value.media && value.media.length ? value.media : [{ type: 'image', url: types_1.PLACEHOLDER_IMAGE }], invalid: false, loading: false, token });
+            const value = result.parrot, parentLabel = (parent) => parent ? `${parent.species}${parent.ringNumber ? ` · ${parent.ringNumber}` : ''}` : '暂未录入';
+            const photos = (value.media || []).filter((item) => item.type === 'image' && item.url);
+            const parrot = { ...value, gender: types_1.GENDER_LABEL[value.gender] || value.gender, age: value.ageLabel, price: Number(value.priceCents || 0) / 100, desc: value.publicIntro, birthDateLabel: String(value.birthDate || '').slice(0, 10), fatherLabel: parentLabel(value.father), motherLabel: parentLabel(value.mother), clutchLabel: value.clutch ? `本窝出壳 ${value.clutch.hatched} 只` : '', image: (photos[0] === null || photos[0] === void 0 ? void 0 : photos[0].url) || types_1.PLACEHOLDER_IMAGE };
+            this.setData({ parrot, media: photos.length ? photos : [{ type: 'image', url: types_1.PLACEHOLDER_IMAGE }], invalid: false, loading: false, token });
         }
         catch (error) {
             this.setData({ invalid: true, loading: false, token });
@@ -37,6 +38,6 @@ Page({
         this.setData({ shareTopStyle: `top:${top}px;left:20px;right:20px;` });
     },
     swiperChange(event) { this.setData({ activeIndex: event.detail.current }); },
-    onShareAppMessage() { var _a, _b; return { title: `${((_a = this.data.parrot) === null || _a === void 0 ? void 0 : _a.species) || 'Parrot Pro'} · 官方档案`, path: `/pages/share/share?token=${encodeURIComponent(this.data.token)}`, imageUrl: (_b = this.data.parrot) === null || _b === void 0 ? void 0 : _b.image }; },
+    onShareAppMessage() { var _a, _b; return { title: `${((_a = this.data.parrot) === null || _a === void 0 ? void 0 : _a.species) || 'Parrot Pro'} · 血统档案`, path: `/pages/share/share?token=${encodeURIComponent(this.data.token)}`, imageUrl: (_b = this.data.parrot) === null || _b === void 0 ? void 0 : _b.image }; },
     goBack() { (0, navigation_1.backOrSwitchTab)(); }
 });

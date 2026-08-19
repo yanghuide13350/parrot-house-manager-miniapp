@@ -10,7 +10,7 @@ export class ApiError extends Error {
   constructor(code: string, message: string, details?: any) { super(message); this.code = code; this.details = details }
 }
 
-export function initApi() { apiReady = /^https:\/\//.test(API_BASE_URL) && !API_BASE_URL.includes('example.com') }
+export function initApi() { apiReady = /^(https:\/\/|http:\/\/127\.0\.0\.1(?::\d+)?$)/.test(API_BASE_URL) && !API_BASE_URL.includes('example.com') }
 export function isApiReady() { return apiReady }
 export function createRequestId(prefix = 'cmd') { return `${prefix}:${Date.now()}:${Math.random().toString(36).slice(2, 12)}` }
 function token() { return String(wx.getStorageSync(SESSION_KEY) || '') }
@@ -52,7 +52,6 @@ export async function getSession(): Promise<SessionDoc> {
 
 export function callManagement(action: string, input: any = {}, requestId = '') { return request('/api/manage', 'POST', { action, input, requestId }) }
 export function resolvePublicShare(shareToken: string) { return request(`/api/public/shares/${encodeURIComponent(shareToken)}`, 'GET', undefined, false) }
-export function importRemoteMedia(url: string) { return request('/api/media/import', 'POST', { url, requestId: createRequestId('media-url') }, true, 60000) }
 
 function readChunk(filePath: string, position: number, length: number): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => wx.getFileSystemManager().readFile({ filePath, position, length, success: (result: any) => resolve(result.data), fail: (error: any) => reject(new ApiError('MEDIA_REJECTED', error.errMsg || '无法读取媒体文件')) }))
@@ -72,10 +71,10 @@ function getImageSize(filePath: string): Promise<{ width: number; height: number
   return new Promise((resolve, reject) => wx.getImageInfo({ src: filePath, success: resolve, fail: reject }))
 }
 
-function uploadFileName(filePath: string, type: 'image' | 'video') {
+function uploadFileName(filePath: string) {
   const extension = (filePath.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const allowed = type === 'image' ? ['jpg', 'jpeg', 'png', 'webp', 'gif'] : ['mp4', 'mov', 'm4v']
-  return `${type}.${allowed.includes(extension) ? extension : type === 'image' ? 'jpg' : 'mp4'}`
+  const allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+  return `image.${allowed.includes(extension) ? extension : 'jpg'}`
 }
 
 async function compressLocalImage(filePath: string) {
@@ -93,18 +92,6 @@ async function compressLocalImage(filePath: string) {
   } catch { throw new ApiError('MEDIA_REJECTED', '图片转换失败，请重新选择 JPG、PNG 或 WebP 图片') }
 }
 
-async function compressLocalVideo(filePath: string, size: number) {
-  if (size <= 8 * 1024 * 1024) return filePath
-  try {
-    return await new Promise<string>((resolve, reject) => wx.compressVideo({
-      src: filePath,
-      quality: 'medium',
-      success: (result: { tempFilePath: string }) => resolve(result.tempFilePath),
-      fail: reject
-    }))
-  } catch { return filePath }
-}
-
 function uploadChunk(assetId: string, uploadId: string, partNumber: number, data: ArrayBuffer): Promise<{ partNumber: number; etag: string }> {
   return new Promise((resolve, reject) => {
     wx.request({ url: apiUrl(`/api/media/multipart/${encodeURIComponent(assetId)}/parts/${partNumber}?uploadId=${encodeURIComponent(uploadId)}`), method: 'PUT', data, header: { Authorization: `Bearer ${token()}`, 'content-type': 'application/octet-stream' }, timeout: 60000, success: (response: any) => {
@@ -115,17 +102,14 @@ function uploadChunk(assetId: string, uploadId: string, partNumber: number, data
   })
 }
 
-export async function uploadMedia(filePath: string, type: 'image' | 'video') {
-  const sourceInfo = await getLocalFileInfo(filePath)
-  const preparedPath = type === 'image' ? await compressLocalImage(filePath) : await compressLocalVideo(filePath, sourceInfo.size)
+export async function uploadMedia(filePath: string) {
+  const preparedPath = await compressLocalImage(filePath)
   const info = await getLocalFileInfo(preparedPath)
-  const uploadPath = type === 'image' || info.size < sourceInfo.size ? preparedPath : filePath
-  const uploadInfo = uploadPath === preparedPath ? info : sourceInfo
-  const prepared = await request('/api/media/multipart/create', 'POST', { type, size: Number(uploadInfo.size || 0), fileName: uploadFileName(uploadPath, type), requestId: createRequestId('media-upload') })
+  const prepared = await request('/api/media/multipart/create', 'POST', { type: 'image', size: Number(info.size || 0), fileName: uploadFileName(preparedPath), requestId: createRequestId('media-upload') })
   const parts: Array<{ partNumber: number; etag: string }> = []
-  for (let position = 0, partNumber = 1; position < uploadInfo.size; position += prepared.partSize, partNumber += 1) {
-    const length = Math.min(prepared.partSize, uploadInfo.size - position)
-    parts.push(await uploadChunk(prepared.assetId, prepared.uploadId, partNumber, await readChunk(uploadPath, position, length)))
+  for (let position = 0, partNumber = 1; position < info.size; position += prepared.partSize, partNumber += 1) {
+    const length = Math.min(prepared.partSize, info.size - position)
+    parts.push(await uploadChunk(prepared.assetId, prepared.uploadId, partNumber, await readChunk(preparedPath, position, length)))
   }
   return request(`/api/media/multipart/${encodeURIComponent(prepared.assetId)}/complete`, 'POST', { uploadId: prepared.uploadId, parts }, true, 60000)
 }

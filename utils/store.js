@@ -81,11 +81,13 @@ class Store {
         throw new Error('找不到孵化父母档案'); const pair = this.getPair(male.activePairId); const result = await repository_1.repository.createHatching(input, male, female, pair); await this.hydrate(true); return result; }
     async updateHatching(id, updates) { const record = this.hatchingRecords.find(item => item.id === id); if (!record)
         throw new Error('找不到孵化记录'); if (updates.hatched == null)
-        throw new Error('出壳数量无效'); await repository_1.repository.updateHatching(record, updates.hatched); await this.hydrate(true); }
+        throw new Error('出壳数量无效'); await repository_1.repository.updateHatching(record, updates.hatched, updates.offspringGroups || []); await this.hydrate(true); }
     async completeHatching(id) { const record = this.hatchingRecords.find(item => item.id === id); if (!record)
         throw new Error('找不到孵化记录'); await repository_1.repository.completeHatching(record); await this.hydrate(true); }
     async deleteHatching(id) { const record = this.hatchingRecords.find(item => item.id === id); if (!record)
         throw new Error('找不到孵化记录'); await repository_1.repository.deleteHatching(record); await this.hydrate(true); }
+    async createFromClutch(id, chicks) { const record = this.hatchingRecords.find(item => item.id === id); if (!record)
+        throw new Error('找不到孵化记录'); const result = await repository_1.repository.createFromClutch(record, chicks); await this.hydrate(true); return result; }
     async addSale(input) { const parrot = this.getParrot(input.parrotId); if (!parrot)
         throw new Error('找不到鹦鹉档案'); const result = await repository_1.repository.createSale(input, parrot); await this.hydrate(true); return result; }
     async returnSale(id, reason) { const record = this.salesRecords.find(item => item.id === id); if (!record)

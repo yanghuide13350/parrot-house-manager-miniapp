@@ -5,7 +5,7 @@ page {
   box-sizing: border-box;
 }
 
-view, scroll-view, swiper, button, input, textarea, image, video, text, canvas {
+view, scroll-view, swiper, button, input, textarea, image, text, canvas {
   box-sizing: border-box;
 }
 

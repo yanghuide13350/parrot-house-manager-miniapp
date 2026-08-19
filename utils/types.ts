@@ -6,7 +6,7 @@ export enum GenderCode { MALE = 'MALE', FEMALE = 'FEMALE', UNKNOWN = 'UNKNOWN' }
 
 export interface MediaItem {
   assetId?: string
-  type: 'image' | 'video'
+  type: 'image'
   url: string
   fileID?: string
   thumbnailUrl?: string
@@ -28,10 +28,11 @@ export interface ParrotDoc {
   birthDate: string
   image: string
   media: MediaItem[]
-  coverType?: 'image' | 'video' | 'placeholder'
-  coverVideoUrl?: string
+  coverType?: 'image' | 'placeholder'
   publicIntro: string
   privateNotes: string
+  father?: ParentInfo | null
+  mother?: ParentInfo | null
   desc?: string
   mate?: string
   mateId?: string
@@ -42,6 +43,15 @@ export interface ParrotDoc {
   createdAt?: string
   updatedAt?: string
 }
+
+export interface ParentInfo {
+  source: 'LIBRARY' | 'MANUAL'
+  id?: string | null
+  species: string
+  ringNumber: string
+}
+
+export interface OffspringGroup { species: string; count: number }
 
 export interface BreedingPairDoc {
   id: string
@@ -59,14 +69,20 @@ export interface HatchingRecordDoc {
   pairId: string
   maleRingNumber: string
   femaleRingNumber: string
+  maleSpecies?: string
+  femaleSpecies?: string
+  pairingDate?: string
   maleId: string
   femaleId: string
   species: string
   startDate: string
   eggs: number
   hatched: number
+  offspringGroups?: OffspringGroup[]
+  offspringRegistered?: number
   status: 'INCUBATING' | 'COMPLETED' | 'CANCELLED'
   revision: number
+  completedAt?: string
   createdAt?: string
   updatedAt?: string
 }

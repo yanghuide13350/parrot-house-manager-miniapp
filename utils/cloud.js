@@ -7,7 +7,6 @@ exports.createRequestId = createRequestId;
 exports.getSession = getSession;
 exports.callManagement = callManagement;
 exports.resolvePublicShare = resolvePublicShare;
-exports.importRemoteMedia = importRemoteMedia;
 exports.uploadMedia = uploadMedia;
 const config_1 = require("../config");
 const SESSION_KEY = 'parrot-pro-api-session-v1';
@@ -16,7 +15,7 @@ class ApiError extends Error {
     constructor(code, message, details) { super(message); this.code = code; this.details = details; }
 }
 exports.ApiError = ApiError;
-function initApi() { apiReady = /^https:\/\//.test(config_1.API_BASE_URL) && !config_1.API_BASE_URL.includes('example.com'); }
+function initApi() { apiReady = /^(https:\/\/|http:\/\/127\.0\.0\.1(?::\d+)?$)/.test(config_1.API_BASE_URL) && !config_1.API_BASE_URL.includes('example.com'); }
 function isApiReady() { return apiReady; }
 function createRequestId(prefix = 'cmd') { return `${prefix}:${Date.now()}:${Math.random().toString(36).slice(2, 12)}`; }
 function token() { return String(wx.getStorageSync(SESSION_KEY) || ''); }
@@ -67,7 +66,6 @@ async function getSession() {
 }
 function callManagement(action, input = {}, requestId = '') { return request('/api/manage', 'POST', { action, input, requestId }); }
 function resolvePublicShare(shareToken) { return request(`/api/public/shares/${encodeURIComponent(shareToken)}`, 'GET', undefined, false); }
-function importRemoteMedia(url) { return request('/api/media/import', 'POST', { url, requestId: createRequestId('media-url') }, true, 60000); }
 function readChunk(filePath, position, length) {
     return new Promise((resolve, reject) => wx.getFileSystemManager().readFile({ filePath, position, length, success: (result) => resolve(result.data), fail: (error) => reject(new ApiError('MEDIA_REJECTED', error.errMsg || '无法读取媒体文件')) }));
 }
@@ -83,10 +81,10 @@ function getLocalFileInfo(filePath) {
 function getImageSize(filePath) {
     return new Promise((resolve, reject) => wx.getImageInfo({ src: filePath, success: resolve, fail: reject }));
 }
-function uploadFileName(filePath, type) {
+function uploadFileName(filePath) {
     const extension = (filePath.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const allowed = type === 'image' ? ['jpg', 'jpeg', 'png', 'webp', 'gif'] : ['mp4', 'mov', 'm4v'];
-    return `${type}.${allowed.includes(extension) ? extension : type === 'image' ? 'jpg' : 'mp4'}`;
+    const allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    return `image.${allowed.includes(extension) ? extension : 'jpg'}`;
 }
 async function compressLocalImage(filePath) {
     try {
@@ -105,21 +103,6 @@ async function compressLocalImage(filePath) {
         throw new ApiError('MEDIA_REJECTED', '图片转换失败，请重新选择 JPG、PNG 或 WebP 图片');
     }
 }
-async function compressLocalVideo(filePath, size) {
-    if (size <= 8 * 1024 * 1024)
-        return filePath;
-    try {
-        return await new Promise((resolve, reject) => wx.compressVideo({
-            src: filePath,
-            quality: 'medium',
-            success: (result) => resolve(result.tempFilePath),
-            fail: reject
-        }));
-    }
-    catch (_a) {
-        return filePath;
-    }
-}
 function uploadChunk(assetId, uploadId, partNumber, data) {
     return new Promise((resolve, reject) => {
         wx.request({ url: apiUrl(`/api/media/multipart/${encodeURIComponent(assetId)}/parts/${partNumber}?uploadId=${encodeURIComponent(uploadId)}`), method: 'PUT', data, header: { Authorization: `Bearer ${token()}`, 'content-type': 'application/octet-stream' }, timeout: 60000, success: (response) => {
@@ -131,17 +114,14 @@ function uploadChunk(assetId, uploadId, partNumber, data) {
             }, fail: (error) => reject(new ApiError('UNAVAILABLE', error.errMsg || '媒体分片上传失败')) });
     });
 }
-async function uploadMedia(filePath, type) {
-    const sourceInfo = await getLocalFileInfo(filePath);
-    const preparedPath = type === 'image' ? await compressLocalImage(filePath) : await compressLocalVideo(filePath, sourceInfo.size);
+async function uploadMedia(filePath) {
+    const preparedPath = await compressLocalImage(filePath);
     const info = await getLocalFileInfo(preparedPath);
-    const uploadPath = type === 'image' || info.size < sourceInfo.size ? preparedPath : filePath;
-    const uploadInfo = uploadPath === preparedPath ? info : sourceInfo;
-    const prepared = await request('/api/media/multipart/create', 'POST', { type, size: Number(uploadInfo.size || 0), fileName: uploadFileName(uploadPath, type), requestId: createRequestId('media-upload') });
+    const prepared = await request('/api/media/multipart/create', 'POST', { type: 'image', size: Number(info.size || 0), fileName: uploadFileName(preparedPath), requestId: createRequestId('media-upload') });
     const parts = [];
-    for (let position = 0, partNumber = 1; position < uploadInfo.size; position += prepared.partSize, partNumber += 1) {
-        const length = Math.min(prepared.partSize, uploadInfo.size - position);
-        parts.push(await uploadChunk(prepared.assetId, prepared.uploadId, partNumber, await readChunk(uploadPath, position, length)));
+    for (let position = 0, partNumber = 1; position < info.size; position += prepared.partSize, partNumber += 1) {
+        const length = Math.min(prepared.partSize, info.size - position);
+        parts.push(await uploadChunk(prepared.assetId, prepared.uploadId, partNumber, await readChunk(preparedPath, position, length)));
     }
     return request(`/api/media/multipart/${encodeURIComponent(prepared.assetId)}/complete`, 'POST', { uploadId: prepared.uploadId, parts }, true, 60000);
 }
