@@ -209,4 +209,4 @@ export const STATUS_CLASS: Record<ParrotStatusCode, string> = {
   FOR_SALE: 'status-green', SOLD: 'status-gray', RETURNED: 'status-purple', BREEDER: 'status-blue', PAIRED: 'status-rose', INCUBATING: 'status-amber'
 }
 
-export const PLACEHOLDER_IMAGE = '/assets/parrots/default-placeholder.png'
+export const PLACEHOLDER_IMAGE = '/assets/parrots/default-placeholder.jpg'
