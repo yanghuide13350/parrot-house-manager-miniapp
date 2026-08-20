@@ -9,6 +9,9 @@
     "pages/clutch-intake/clutch-intake",
     "pages/sales-records/sales-records",
     "pages/access/access",
+    "pages/feeding-plans/feeding-plans",
+    "pages/feeding-plan-form/feeding-plan-form",
+    "pages/feeding-plan-view/feeding-plan-view",
     "pages/share/share",
     "pages/unauthorized/unauthorized"
   ],

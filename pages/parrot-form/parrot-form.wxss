@@ -14,6 +14,8 @@
 .remove-media { position: absolute; top: 8rpx; right: 8rpx; z-index: 2; display: flex; align-items: center; justify-content: center; width: 44rpx; height: 44rpx; border-radius: 50%; background: #be123c; color: #fff; font-size: 28rpx; font-weight: 700; line-height: 1; }
 .url-actions button { flex: 1; height: 76rpx; line-height: 76rpx; font-size: 22rpx; }
 .field-label { display: block; margin: 30rpx 0 14rpx; color: #0f172a; font-size: 21rpx; font-weight: 900; letter-spacing: 1rpx; }
+.breed-options { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 14rpx; }
+.breed-option { padding: 12rpx 20rpx; border: 1rpx solid #bbf7d0; border-radius: 999rpx; background: #f0fdf4; color: #166534; font-size: 21rpx; font-weight: 800; }
 .gender-tabs { display: flex; gap: 8rpx; padding: 8rpx; border-radius: 20rpx; background: #f1f5f9; }
 .gender-tab { flex: 1; padding: 22rpx 8rpx; border-radius: 16rpx; text-align: center; color: #64748b; font-size: 21rpx; font-weight: 800; }
 .gender-tab.active { color: #0f172a; background: #fff; box-shadow: 0 6rpx 14rpx rgba(30,41,59,.08); }

@@ -3,13 +3,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.repository = void 0;
 const cloud_1 = require("./cloud");
 const types_1 = require("./types");
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 let session = null;
+let sessionLoading = null;
 const emptyDashboard = () => ({ stats: { total: 0, forSale: 0, sold: 0, returned: 0, breeder: 0, paired: 0, incubating: 0, revenueCents: 0, salesTotal: 0, returnRate: 0 }, species: [], trend: [] });
 const cacheKey = () => session ? `parrot-pro-v${CACHE_VERSION}:${session.openId}` : '';
 const dateValue = (value) => value instanceof Date ? value.toISOString() : value ? String(value) : '';
+function loadSession() {
+    if (!sessionLoading)
+        sessionLoading = (0, cloud_1.getSession)().then(value => {
+            session = value;
+            return value;
+        }).finally(() => { sessionLoading = null; });
+    return sessionLoading;
+}
 function mapMedia(items) {
-    return (items || []).filter(item => (item === null || item === void 0 ? void 0 : item.type) === 'image' && item.fileID).map(item => ({ assetId: item.assetId, type: 'image', fileID: item.fileID, url: item.fileID, thumbnailFileID: item.thumbnailFileID || '', thumbnailUrl: item.thumbnailFileID || '', posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }));
+    return (items || []).filter(item => (item === null || item === void 0 ? void 0 : item.type) === 'image' && (item === null || item === void 0 ? void 0 : item.fileID)).map(item => ({ assetId: item.assetId, type: 'image', fileID: item.fileID, url: item.fileID, thumbnailFileID: item.thumbnailFileID || '', thumbnailUrl: item.thumbnailFileID || '', posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }));
 }
 function coverMedia(media) {
     const image = media.find(item => item.type === 'image' && item.url);
@@ -22,6 +31,7 @@ function mapParrot(item) {
     const cover = coverMedia(media);
     return {
         id: item.id,
+        breed: item.breed || '',
         species: item.species,
         ringNumber: item.ringNumber,
         gender: item.gender,
@@ -35,8 +45,10 @@ function mapParrot(item) {
         coverType: cover.type,
         publicIntro: item.publicIntro || '',
         privateNotes: item.privateNotes || '',
+        feedingPlanId: item.feedingPlanId || '',
         father: item.father || null,
         mother: item.mother || null,
+        birthHatchingRecordId: item.birthHatchingRecordId || '',
         desc: item.privateNotes || '',
         activePairId: item.activePairId || undefined,
         pairedAt: dateValue(item.pairedAt) || undefined,
@@ -58,16 +70,16 @@ function mapPair(item) {
     };
 }
 function mapHatching(item) {
-    return { id: item.id, pairId: item.pairId, maleId: item.maleId, femaleId: item.femaleId, maleRingNumber: item.maleSnapshot.ringNumber, femaleRingNumber: item.femaleSnapshot.ringNumber, maleSpecies: item.maleSnapshot.species || '', femaleSpecies: item.femaleSnapshot.species || '', pairingDate: dateValue(item.pairingDate), species: item.species, startDate: item.startDate, eggs: item.eggs, hatched: item.hatched, offspringGroups: item.offspringGroups || [], offspringRegistered: Number(item.offspringRegistered || 0), status: item.status, revision: item.revision, completedAt: dateValue(item.completedAt), createdAt: dateValue(item.createdAt), updatedAt: dateValue(item.updatedAt) };
+    return { id: item.id, pairId: item.pairId, maleId: item.maleId, femaleId: item.femaleId, maleRingNumber: item.maleSnapshot.ringNumber, femaleRingNumber: item.femaleSnapshot.ringNumber, maleSpecies: item.maleSnapshot.species || '', femaleSpecies: item.femaleSnapshot.species || '', pairingDate: dateValue(item.pairingDate), species: item.species, startDate: item.startDate, eggs: item.eggs, hatched: item.hatched, offspringGroups: item.offspringGroups || [], offspring: (item.offspring || []).map((chick) => ({ id: chick.id, ringNumber: chick.ringNumber || '' })), offspringRegistered: Number(item.offspringRegistered || 0), status: item.status, revision: item.revision, completedAt: dateValue(item.completedAt), createdAt: dateValue(item.createdAt), updatedAt: dateValue(item.updatedAt) };
 }
 function mapSale(item) {
     const media = mapMedia(item.parrotSnapshot && item.parrotSnapshot.media);
     const cover = coverMedia(media);
-    return { id: item.id, parrotId: item.parrotId, species: item.parrotSnapshot.species, ringNumber: item.parrotSnapshot.ringNumber, gender: item.parrotSnapshot.gender, buyer: item.buyer, buyerContact: item.buyerContact, date: item.saleDate, price: Number(item.priceCents || 0) / 100, priceCents: Number(item.priceCents || 0), status: item.status, returnReason: item.returnReason, visitStatus: item.followUpStatus, image: cover.url, revision: item.revision, createdAt: dateValue(item.createdAt) };
+    return { id: item.id, parrotId: item.parrotId, breed: item.parrotSnapshot.breed || '', species: item.parrotSnapshot.species, ringNumber: item.parrotSnapshot.ringNumber, gender: item.parrotSnapshot.gender, buyer: item.buyer, buyerContact: item.buyerContact, date: item.saleDate, price: Number(item.priceCents || 0) / 100, priceCents: Number(item.priceCents || 0), status: item.status, returnReason: item.returnReason, visitStatus: item.followUpStatus, image: cover.url, revision: item.revision, createdAt: dateValue(item.createdAt) };
 }
 async function ensureSession() {
     if (!session)
-        session = await (0, cloud_1.getSession)();
+        await loadSession();
     if (!session.authorized)
         throw new Error(session.configured ? '当前微信账号无管理权限' : '主账号尚未配置');
     return session;
@@ -86,9 +98,9 @@ function applyPairViews(parrots, pairs) {
     }
 }
 exports.repository = {
-    async session() { session = await (0, cloud_1.getSession)(); return session; },
+    session() { return loadSession(); },
     currentSession() { return session; },
-    async refreshSession() { session = await (0, cloud_1.getSession)(); return session; },
+    refreshSession() { return loadSession(); },
     loadCache() {
         if (!session || !session.authorized)
             return null;
@@ -106,6 +118,12 @@ exports.repository = {
         return snapshot;
     },
     accessList() { return (0, cloud_1.callManagement)('access.list'); },
+    feedingPlans() { return (0, cloud_1.callManagement)('feedingPlans.list'); },
+    createFeedingPlan(input) { return (0, cloud_1.callManagement)('feedingPlans.create', input, (0, cloud_1.createRequestId)('feeding-plan-create')); },
+    updateFeedingPlan(plan, input) { return (0, cloud_1.callManagement)('feedingPlans.update', { ...input, id: plan.id, revision: plan.revision }, (0, cloud_1.createRequestId)('feeding-plan-update')); },
+    deleteFeedingPlan(plan) { return (0, cloud_1.callManagement)('feedingPlans.delete', { id: plan.id, revision: plan.revision }, (0, cloud_1.createRequestId)('feeding-plan-delete')); },
+    setFeedingPlanEnabled(plan, enabled) { return (0, cloud_1.callManagement)('feedingPlans.setEnabled', { id: plan.id, revision: plan.revision, enabled }, (0, cloud_1.createRequestId)('feeding-plan-enabled')); },
+    setParrotFeedingPlan(id, revision, feedingPlanId) { return (0, cloud_1.callManagement)('parrots.setFeedingPlan', { id, revision, feedingPlanId }, (0, cloud_1.createRequestId)('parrot-feeding-plan')); },
     requestAccess(note) { return (0, cloud_1.callManagement)('access.request', { note }, (0, cloud_1.createRequestId)('access-request')); },
     myAccessStatus() { return (0, cloud_1.callManagement)('access.myStatus'); },
     approveAccess(requestId, note) { return (0, cloud_1.callManagement)('access.approve', { requestId, note }, (0, cloud_1.createRequestId)('access-approve')); },
@@ -114,7 +132,7 @@ exports.repository = {
     setAdmin(openId) { return (0, cloud_1.callManagement)('access.setAdmin', { openId }, (0, cloud_1.createRequestId)('access-set-admin')); },
     unsetAdmin(openId) { return (0, cloud_1.callManagement)('access.unsetAdmin', { openId }, (0, cloud_1.createRequestId)('access-unset-admin')); },
     setAccessPolicy(openAccess) { return (0, cloud_1.callManagement)('access.setPolicy', { openAccess }, (0, cloud_1.createRequestId)('access-policy')); },
-    createParrot(input) { return (0, cloud_1.callManagement)('parrots.create', { species: input.species, ringNumber: input.ringNumber, gender: input.gender, birthDate: input.birthDate, priceCents: Math.round(Number(input.price || 0) * 100), publicIntro: input.publicIntro || '', privateNotes: input.privateNotes || input.desc || '', father: input.father, mother: input.mother, media: toApiMedia(input.media) }, (0, cloud_1.createRequestId)('parrot-create')); },
+    createParrot(input) { return (0, cloud_1.callManagement)('parrots.create', { breed: input.breed, species: input.species, ringNumber: input.ringNumber, gender: input.gender, birthDate: input.birthDate, priceCents: Math.round(Number(input.price || 0) * 100), publicIntro: input.publicIntro || '', privateNotes: input.privateNotes || input.desc || '', father: input.father, mother: input.mother, media: toApiMedia(input.media) }, (0, cloud_1.createRequestId)('parrot-create')); },
     updateParrot(id, currentRevision, updates) { return (0, cloud_1.callManagement)('parrots.update', { id, revision: currentRevision, updates: cleanParrotUpdates(updates) }, (0, cloud_1.createRequestId)('parrot-update')); },
     deleteParrot(id, currentRevision) { return (0, cloud_1.callManagement)('parrots.delete', { id, revision: currentRevision }, (0, cloud_1.createRequestId)('parrot-delete')); },
     setBreeder(id, currentRevision) { return (0, cloud_1.callManagement)('parrots.setBreeder', { id, revision: currentRevision }, (0, cloud_1.createRequestId)('breeder-set')); },
@@ -125,7 +143,7 @@ exports.repository = {
     updateHatching(record, hatched, offspringGroups) { return (0, cloud_1.callManagement)('hatching.updateProgress', { id: record.id, revision: record.revision, hatched, offspringGroups }, (0, cloud_1.createRequestId)('hatching-progress')); },
     completeHatching(record) { return (0, cloud_1.callManagement)('hatching.complete', { id: record.id, revision: record.revision }, (0, cloud_1.createRequestId)('hatching-complete')); },
     deleteHatching(record) { return (0, cloud_1.callManagement)('hatching.delete', { id: record.id, revision: record.revision }, (0, cloud_1.createRequestId)('hatching-delete')); },
-    createFromClutch(record, chicks) { return (0, cloud_1.callManagement)('parrots.createFromClutch', { hatchingRecordId: record.id, revision: record.revision, chicks: chicks.map(item => ({ species: item.species, ringNumber: item.ringNumber || '', gender: item.gender, priceCents: Math.round(Number(item.price || 0) * 100), privateNotes: item.privateNotes || '' })) }, (0, cloud_1.createRequestId)('clutch-intake')); },
+    createFromClutch(record, chicks) { return (0, cloud_1.callManagement)('parrots.createFromClutch', { hatchingRecordId: record.id, revision: record.revision, chicks: chicks.map(item => ({ breed: item.breed, species: item.species, ringNumber: item.ringNumber || '', gender: item.gender, priceCents: Math.round(Number(item.price || 0) * 100), privateNotes: item.privateNotes || '' })) }, (0, cloud_1.createRequestId)('clutch-intake')); },
     createSale(input, parrot) { return (0, cloud_1.callManagement)('sales.create', { parrotId: parrot.id, parrotRevision: parrot.revision, buyer: input.buyer, buyerContact: input.buyerContact || '', saleDate: input.date, priceCents: Math.round(Number(input.price || 0) * 100) }, (0, cloud_1.createRequestId)('sale-create')); },
     returnSale(record, reason) { return (0, cloud_1.callManagement)('sales.return', { id: record.id, revision: record.revision, reason }, (0, cloud_1.createRequestId)('sale-return')); },
     updateFollowUp(record, status) { return (0, cloud_1.callManagement)('sales.updateFollowUp', { id: record.id, revision: record.revision, status }, (0, cloud_1.createRequestId)('sale-followup')); },
@@ -135,7 +153,7 @@ exports.repository = {
 function toApiMedia(media = []) { return media.filter(item => item.assetId && (item.fileID || item.url)).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID || item.url, posterFileID: item.posterFileID || item.poster || '' })); }
 function cleanParrotUpdates(updates) {
     const allowed = {};
-    for (const key of ['species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother'])
+    for (const key of ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother'])
         if (Object.prototype.hasOwnProperty.call(updates, key))
             allowed[key] = updates[key];
     if (Object.prototype.hasOwnProperty.call(updates, 'price'))

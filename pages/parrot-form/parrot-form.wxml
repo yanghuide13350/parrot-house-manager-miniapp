@@ -10,8 +10,9 @@
       </view>
     </view>
     <view class="card form-card">
-      <text class="field-label">品种名称 · SPECIES</text><input class="input" data-key="species" value="{{form.species}}" bindinput="input" placeholder="如：蓝色金刚鹦鹉"/>
-      <text class="field-label">足环编号 · RING ID</text><input class="input" data-key="ringNumber" value="{{form.ringNumber}}" bindinput="input" placeholder="输入唯一身份编码"/>
+      <text class="field-label">品种 · BREED</text><input class="input" data-key="breed" value="{{form.breed}}" bindinput="input" bindfocus="focusBreed" placeholder="如：玄凤、虎皮"/><view wx:if="{{breedOptions.length}}" class="breed-options"><text wx:for="{{breedOptions}}" wx:key="*this" class="breed-option tap" data-value="{{item}}" bindtap="chooseBreed">{{item}}</text></view>
+      <text class="field-label">名称 · NAME</text><input class="input" data-key="species" value="{{form.species}}" bindinput="input" placeholder="如：黄化玄凤、原始灰玄凤"/>
+      <text class="field-label">圈号 <text class="optional">（选填）</text></text><input class="input" data-key="ringNumber" value="{{form.ringNumber}}" bindinput="input" placeholder="暂未佩戴可留空，后续可补充"/>
       <text class="field-label">性别 · SEX</text><view class="gender-tabs"><text wx:for="{{genders}}" wx:key="key" data-key="{{item.key}}" bindtap="chooseGender" class="gender-tab {{form.gender === item.key ? 'active' : ''}}">{{item.label}}</text></view>
       <view class="two-fields"><view><text class="field-label">估值 (¥)</text><input class="input" type="digit" data-key="price" value="{{form.price}}" bindinput="input" placeholder="0"/></view><view><text class="field-label">出生日期</text><picker mode="date" value="{{form.birthDate}}" bindchange="chooseDate"><view class="picker">{{form.birthDate}}</view></picker></view></view>
       <view class="lineage-section">

@@ -1,0 +1,11 @@
+<view class="page fade-in feeding-page">
+  <view class="page-pad safe-top library-header">
+    <button class="back-button tap" bindtap="goBack"><app-icon name="arrow-left" size="22"/></button>
+    <view><view class="eyebrow">FEEDING PLANS</view><view class="title">喂养方案</view></view>
+    <button class="add-button button-dark tap" bindtap="openCreate"><app-icon name="plus" size="24"/></button>
+  </view>
+  <view class="page-pad plans">
+    <view wx:if="{{plans.length}}" class="plan-surface"><view wx:for="{{plans}}" wx:key="id" class="plan-row"><image class="plan-image" src="/assets/parrots/feeding-chick.png" mode="aspectFill"/><view class="plan-main"><view class="plan-title">{{item.name}}<text wx:if="{{item.isEnabled}}" class="enabled-mark">已开启</text></view><view class="plan-subtitle">{{item.species}} · {{item.stage}} · {{item.ageLabel}}</view><view class="plan-facts"><text>{{item.foodLabel}}</text><text>{{item.feedingsPerDay || '—'}} 次/天</text></view><view class="plan-actions"><button class="action-button tap" data-id="{{item.id}}" catchtap="preview">查看</button><button wx:if="{{!item.isEnabled}}" class="action-button tap" data-id="{{item.id}}" catchtap="openEdit">编辑</button><button wx:if="{{!item.isEnabled}}" class="action-button action-delete tap" data-id="{{item.id}}" catchtap="remove">删除</button><view class="plan-switch"><text>{{item.isEnabled ? '已开启' : '未开启'}}</text><switch checked="{{item.isEnabled}}" color="#42614c" data-id="{{item.id}}" bindchange="toggleEnabled"/></view></view></view></view></view>
+    <view wx:else class="empty card"><view class="empty-mark">+</view><view>还没有喂养方案</view><text>从一套基础方案开始建立吧</text><button class="button-dark empty-add" bindtap="openCreate">新增第一套方案</button></view>
+  </view>
+</view>

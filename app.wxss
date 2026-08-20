@@ -95,3 +95,8 @@ button::after { border: 0; }
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* 喂养方案卡片只保留开关本身，状态由开关位置表达。 */
+.plan-switch text {
+  display: none;
+}

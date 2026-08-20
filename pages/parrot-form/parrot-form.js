@@ -6,23 +6,45 @@ const cloud_1 = require("../../utils/cloud");
 const navigation_1 = require("../../utils/navigation");
 const date_1 = require("../../utils/date");
 Page({
-    data: { isEdit: false, id: '', media: [], saving: false, uploading: false, focusedParentField: '', form: { species: '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', birthDate: (0, date_1.todayDate)(), publicIntro: '', privateNotes: '' }, father: null, mother: null, maleCandidates: [], femaleCandidates: [], genders: [{ key: types_1.GenderCode.MALE, label: '公 (Male)' }, { key: types_1.GenderCode.FEMALE, label: '母 (Female)' }, { key: types_1.GenderCode.UNKNOWN, label: '未验卡' }] },
+    data: { isEdit: false, id: '', media: [], saving: false, uploading: false, focusedParentField: '', breedOptions: [], form: { breed: '', species: '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', birthDate: (0, date_1.todayDate)(), publicIntro: '', privateNotes: '' }, father: null, mother: null, maleCandidates: [], femaleCandidates: [], genders: [{ key: types_1.GenderCode.MALE, label: '公 (Male)' }, { key: types_1.GenderCode.FEMALE, label: '母 (Female)' }, { key: types_1.GenderCode.UNKNOWN, label: '未验卡' }] },
     onLoad(options) {
         if (!options.id)
             return;
         const parrot = store_1.store.getParrot(options.id);
         if (parrot)
-            this.setData({ isEdit: true, id: options.id, media: parrot.media || [], father: parrot.father || null, mother: parrot.mother || null, form: { species: parrot.species, ringNumber: parrot.ringNumber, gender: parrot.gender, price: String(parrot.price), birthDate: parrot.birthDate, publicIntro: parrot.publicIntro || '', privateNotes: parrot.privateNotes || '' } });
+            this.setData({ isEdit: true, id: options.id, media: parrot.media || [], father: parrot.father || null, mother: parrot.mother || null, form: { breed: parrot.breed || '', species: parrot.species, ringNumber: parrot.ringNumber, gender: parrot.gender, price: String(parrot.price), birthDate: parrot.birthDate, publicIntro: parrot.publicIntro || '', privateNotes: parrot.privateNotes || '' } });
     },
     onShow() { this.refreshCandidates(); },
-    refreshCandidates() { const available = store_1.store.parrots.filter(item => item.id !== this.data.id).map(item => ({ ...item, label: `${item.species}｜${item.ringNumber}` })); this.setData({ maleCandidates: available.filter(item => item.gender === types_1.GenderCode.MALE), femaleCandidates: available.filter(item => item.gender === types_1.GenderCode.FEMALE) }); },
+    refreshCandidates() {
+        const available = store_1.store.parrots.filter(item => item.id !== this.data.id).map(item => ({ ...item, label: `${item.species}｜${item.ringNumber}` }));
+        this.setData({ maleCandidates: available.filter(item => item.gender === types_1.GenderCode.MALE), femaleCandidates: available.filter(item => item.gender === types_1.GenderCode.FEMALE) });
+        this.refreshBreedOptions();
+    },
     goBack() { (0, navigation_1.backOrSwitchTab)(); },
-    input(event) { this.setData({ [`form.${event.currentTarget.dataset.key}`]: event.detail.value }); },
+    refreshBreedOptions(keyword = this.data.form.breed) {
+        const normalized = String(keyword || '').trim().toLowerCase();
+        const breedOptions = [...new Set(store_1.store.parrots.map(item => String(item.breed || '').trim()).filter(Boolean))].filter(item => !normalized || item.toLowerCase().includes(normalized)).slice(0, 8);
+        this.setData({ breedOptions });
+    },
+    input(event) { const key = event.currentTarget.dataset.key, value = event.detail.value; this.setData({ [`form.${key}`]: value }); if (key === 'breed')
+        this.refreshBreedOptions(value); },
+    focusBreed() { this.refreshBreedOptions(); },
+    chooseBreed(event) { this.setData({ 'form.breed': event.currentTarget.dataset.value, breedOptions: [] }); },
     chooseGender(event) { this.setData({ 'form.gender': event.currentTarget.dataset.key }); },
     chooseDate(event) { this.setData({ 'form.birthDate': event.detail.value }); },
-    chooseParent(event) { const role = event.currentTarget.dataset.role, candidates = role === 'father' ? this.data.maleCandidates : this.data.femaleCandidates, parent = candidates[Number(event.detail.value)]; if (parent)
-        this.setData({ [role]: { source: 'LIBRARY', id: parent.id, species: parent.species, ringNumber: parent.ringNumber } }); },
-    inputManualParent(event) { const role = event.currentTarget.dataset.role, key = event.currentTarget.dataset.key, current = this.data[role] || { source: 'MANUAL', species: '', ringNumber: '' }; this.setData({ [role]: { ...current, source: 'MANUAL', id: null, [key]: event.detail.value } }); },
+    chooseParent(event) {
+        const role = event.currentTarget.dataset.role;
+        const candidates = role === 'father' ? this.data.maleCandidates : this.data.femaleCandidates;
+        const parent = candidates[Number(event.detail.value)];
+        if (parent)
+            this.setData({ [role]: { source: 'LIBRARY', id: parent.id, species: parent.species, ringNumber: parent.ringNumber } });
+    },
+    inputManualParent(event) {
+        const role = event.currentTarget.dataset.role, key = event.currentTarget.dataset.key;
+        const current = this.data[role] || { source: 'MANUAL', species: '', ringNumber: '' };
+        // 修改带入内容即转为手工资料，避免关联的库内档案被误改。
+        this.setData({ [role]: { ...current, source: 'MANUAL', id: null, [key]: event.detail.value } });
+    },
     focusParentField(event) { this.setData({ focusedParentField: event.currentTarget.dataset.focus }); },
     blurParentField() { this.setData({ focusedParentField: '' }); },
     clearParent(event) { this.setData({ [event.currentTarget.dataset.role]: null }); },
@@ -59,8 +81,8 @@ Page({
     },
     async save() {
         const form = this.data.form;
-        if (!form.species || !form.ringNumber || !form.birthDate) {
-            wx.showToast({ title: '请填写关键信息', icon: 'none' });
+        if (!form.breed || !form.species || !form.birthDate) {
+            wx.showToast({ title: '请填写品种、名称和出生日期', icon: 'none' });
             return;
         }
         if (!Number.isFinite(Number(form.price)) || Number(form.price) < 0) {
@@ -70,12 +92,15 @@ Page({
         if (this.data.saving || this.data.uploading)
             return;
         const normalized = String(form.ringNumber).replace(/\s+/g, '').toUpperCase();
-        if (store_1.store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) {
+        if (normalized && store_1.store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) {
             wx.showToast({ title: '圈号已存在', icon: 'none' });
             return;
         }
-        if (!this.data.father || !this.data.mother || !this.data.father.species || !this.data.mother.species) { wx.showToast({ title: '请配置父鸟和母鸟', icon: 'none' }); return; }
-        const complete = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother };
+        if (!this.data.father || !this.data.mother || !this.data.father.species || !this.data.mother.species) {
+            wx.showToast({ title: '请配置父鸟和母鸟', icon: 'none' });
+            return;
+        }
+        const complete = { breed: form.breed, species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother };
         let payload = complete;
         if (this.data.isEdit) {
             const current = store_1.store.getParrot(this.data.id);
@@ -84,7 +109,7 @@ Page({
                 return;
             }
             payload = {};
-            for (const key of ['species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother'])
+            for (const key of ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother'])
                 if (JSON.stringify(complete[key]) !== JSON.stringify(current[key]))
                     payload[key] = complete[key];
             if (complete.price !== current.price)

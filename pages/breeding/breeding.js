@@ -11,8 +11,8 @@ Page({
     onUnload() { if (this.unsubscribe)
         this.unsubscribe(); },
     refresh() {
-        const pairs = store_1.store.pairs.map(pair => ({ ...pair, species: pair.male.species, status: pair.status === 'INCUBATING' ? types_1.ParrotStatusCode.INCUBATING : types_1.ParrotStatusCode.PAIRED, duration: pair.male.pairDays || 0 }));
-        const breeders = store_1.store.parrots.filter(item => item.status === types_1.ParrotStatusCode.BREEDER).map(item => ({ ...item, genderLabel: types_1.GENDER_LABEL[item.gender] }));
+        const pairs = store_1.store.pairs.map(pair => ({ ...pair, male: { ...pair.male, ringLabel: pair.male.ringNumber || '需补充' }, female: { ...pair.female, ringLabel: pair.female.ringNumber || '需补充' }, breed: pair.male.breed || '', species: pair.male.species, status: pair.status === 'INCUBATING' ? types_1.ParrotStatusCode.INCUBATING : types_1.ParrotStatusCode.PAIRED, duration: pair.male.pairDays || 0 }));
+        const breeders = store_1.store.parrots.filter(item => item.status === types_1.ParrotStatusCode.BREEDER).map(item => ({ ...item, genderLabel: types_1.GENDER_LABEL[item.gender], ringLabel: item.ringNumber || '需补充' }));
         this.setData({ pairs, breeders });
     },
     setTabHidden(hidden) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar)

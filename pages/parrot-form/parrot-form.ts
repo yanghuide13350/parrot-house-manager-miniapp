@@ -5,19 +5,27 @@ import { backOrSwitchTab } from '../../utils/navigation'
 import { todayDate } from '../../utils/date'
 
 Page({
-  data: { isEdit: false, id: '', media: [] as MediaItem[], saving: false, uploading: false, focusedParentField: '', form: { species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: todayDate(), publicIntro: '', privateNotes: '' }, father: null as ParentInfo | null, mother: null as ParentInfo | null, maleCandidates: [] as any[], femaleCandidates: [] as any[], genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
+  data: { isEdit: false, id: '', media: [] as MediaItem[], saving: false, uploading: false, focusedParentField: '', breedOptions: [] as string[], form: { breed: '', species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: todayDate(), publicIntro: '', privateNotes: '' }, father: null as ParentInfo | null, mother: null as ParentInfo | null, maleCandidates: [] as any[], femaleCandidates: [] as any[], genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
   onLoad(options: any) {
     if (!options.id) return
     const parrot = store.getParrot(options.id)
-    if (parrot) this.setData({ isEdit: true, id: options.id, media: parrot.media || [], father: parrot.father || null, mother: parrot.mother || null, form: { species: parrot.species, ringNumber: parrot.ringNumber, gender: parrot.gender, price: String(parrot.price), birthDate: parrot.birthDate, publicIntro: parrot.publicIntro || '', privateNotes: parrot.privateNotes || '' } })
+    if (parrot) this.setData({ isEdit: true, id: options.id, media: parrot.media || [], father: parrot.father || null, mother: parrot.mother || null, form: { breed: parrot.breed || '', species: parrot.species, ringNumber: parrot.ringNumber, gender: parrot.gender, price: String(parrot.price), birthDate: parrot.birthDate, publicIntro: parrot.publicIntro || '', privateNotes: parrot.privateNotes || '' } })
   },
   onShow() { this.refreshCandidates() },
   refreshCandidates() {
     const available = store.parrots.filter(item => item.id !== this.data.id).map(item => ({ ...item, label: `${item.species}｜${item.ringNumber}` }))
     this.setData({ maleCandidates: available.filter(item => item.gender === GenderCode.MALE), femaleCandidates: available.filter(item => item.gender === GenderCode.FEMALE) })
+    this.refreshBreedOptions()
   },
   goBack() { backOrSwitchTab() },
-  input(event: any) { this.setData({ [`form.${event.currentTarget.dataset.key}`]: event.detail.value }) },
+  refreshBreedOptions(keyword = this.data.form.breed) {
+    const normalized = String(keyword || '').trim().toLowerCase()
+    const breedOptions = [...new Set(store.parrots.map(item => String(item.breed || '').trim()).filter(Boolean))].filter(item => !normalized || item.toLowerCase().includes(normalized)).slice(0, 8)
+    this.setData({ breedOptions })
+  },
+  input(event: any) { const key = event.currentTarget.dataset.key, value = event.detail.value; this.setData({ [`form.${key}`]: value }); if (key === 'breed') this.refreshBreedOptions(value) },
+  focusBreed() { this.refreshBreedOptions() },
+  chooseBreed(event: any) { this.setData({ 'form.breed': event.currentTarget.dataset.value, breedOptions: [] }) },
   chooseGender(event: any) { this.setData({ 'form.gender': event.currentTarget.dataset.key }) },
   chooseDate(event: any) { this.setData({ 'form.birthDate': event.detail.value }) },
   chooseParent(event: any) {
@@ -61,19 +69,19 @@ Page({
   },
   async save() {
     const form = this.data.form
-    if (!form.species || !form.ringNumber || !form.birthDate) { wx.showToast({ title: '请填写关键信息', icon: 'none' }); return }
+    if (!form.breed || !form.species || !form.birthDate) { wx.showToast({ title: '请填写品种、名称和出生日期', icon: 'none' }); return }
     if (!Number.isFinite(Number(form.price)) || Number(form.price) < 0) { wx.showToast({ title: '请输入正确价格', icon: 'none' }); return }
     if (this.data.saving || this.data.uploading) return
     const normalized = String(form.ringNumber).replace(/\s+/g, '').toUpperCase()
-    if (store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) { wx.showToast({ title: '圈号已存在', icon: 'none' }); return }
+    if (normalized && store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) { wx.showToast({ title: '圈号已存在', icon: 'none' }); return }
     if (!this.data.father || !this.data.mother || !this.data.father.species || !this.data.mother.species) { wx.showToast({ title: '请配置父鸟和母鸟', icon: 'none' }); return }
-    const complete: any = { species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother }
+    const complete: any = { breed: form.breed, species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother }
     let payload = complete
     if (this.data.isEdit) {
       const current = store.getParrot(this.data.id)
       if (!current) { wx.showToast({ title: '档案不存在，请刷新后重试', icon: 'none' }); return }
       payload = {}
-      for (const key of ['species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother']) if (JSON.stringify(complete[key]) !== JSON.stringify((current as any)[key])) payload[key] = complete[key]
+      for (const key of ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother']) if (JSON.stringify(complete[key]) !== JSON.stringify((current as any)[key])) payload[key] = complete[key]
       if (complete.price !== current.price) payload.price = complete.price
       const mediaKey = (items: MediaItem[]) => JSON.stringify(items.map(item => ({ assetId: item.assetId, type: item.type })))
       if (mediaKey(complete.media) !== mediaKey(current.media || [])) payload.media = complete.media

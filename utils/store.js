@@ -73,6 +73,8 @@ class Store {
         throw new Error('找不到鹦鹉档案'); await repository_1.repository.setBreeder(id, item.revision); await this.hydrate(true); }
     async unsetBreeder(id) { const item = this.getParrot(id); if (!item)
         throw new Error('找不到鹦鹉档案'); await repository_1.repository.unsetBreeder(id, item.revision); await this.hydrate(true); }
+    async setFeedingPlan(id, feedingPlanId) { const item = this.getParrot(id); if (!item)
+        throw new Error('找不到鹦鹉档案'); await repository_1.repository.setParrotFeedingPlan(id, item.revision, feedingPlanId); await this.hydrate(true); }
     async pairParrots(maleId, femaleId) { const male = this.getParrot(maleId); const female = this.getParrot(femaleId); if (!male || !female)
         throw new Error('找不到配对档案'); await repository_1.repository.pairParrots(male, female); await this.hydrate(true); }
     async cancelPair(pairId) { const pair = this.getPair(pairId); if (!pair)

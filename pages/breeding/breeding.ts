@@ -8,8 +8,8 @@ Page({
   onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ selected: 2, hidden: false }); this.refresh() },
   onUnload() { if (this.unsubscribe) this.unsubscribe() },
   refresh() {
-    const pairs = store.pairs.map(pair => ({ ...pair, species: pair.male.species, status: pair.status === 'INCUBATING' ? ParrotStatusCode.INCUBATING : ParrotStatusCode.PAIRED, duration: pair.male.pairDays || 0 }))
-    const breeders = store.parrots.filter(item => item.status === ParrotStatusCode.BREEDER).map(item => ({ ...item, genderLabel: GENDER_LABEL[item.gender] }))
+    const pairs = store.pairs.map(pair => ({ ...pair, male: { ...pair.male, ringLabel: pair.male.ringNumber || '需补充' }, female: { ...pair.female, ringLabel: pair.female.ringNumber || '需补充' }, breed: pair.male.breed || '', species: pair.male.species, status: pair.status === 'INCUBATING' ? ParrotStatusCode.INCUBATING : ParrotStatusCode.PAIRED, duration: pair.male.pairDays || 0 }))
+    const breeders = store.parrots.filter(item => item.status === ParrotStatusCode.BREEDER).map(item => ({ ...item, genderLabel: GENDER_LABEL[item.gender], ringLabel: item.ringNumber || '需补充' }))
     this.setData({ pairs, breeders })
   },
   setTabHidden(hidden: boolean) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ hidden }) },

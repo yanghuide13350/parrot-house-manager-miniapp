@@ -18,6 +18,7 @@ export interface MediaItem {
 
 export interface ParrotDoc {
   id: string
+  breed: string
   species: string
   ringNumber: string
   gender: GenderCode
@@ -31,8 +32,10 @@ export interface ParrotDoc {
   coverType?: 'image' | 'placeholder'
   publicIntro: string
   privateNotes: string
+  feedingPlanId?: string
   father?: ParentInfo | null
   mother?: ParentInfo | null
+  birthHatchingRecordId?: string
   desc?: string
   mate?: string
   mateId?: string
@@ -44,6 +47,37 @@ export interface ParrotDoc {
   updatedAt?: string
 }
 
+export interface FeedingPlanDoc {
+  id: string
+  name: string
+  species: string
+  stage: string
+  ageFromMonths: number
+  ageFromDays: number
+  ageToMonths: number
+  ageToDays: number
+  isEnabled: boolean
+  feedingType: 'FORMULA' | 'MIXED' | 'SOLID'
+  formulaName: string
+  waterMl: number
+  powderScoops: string
+  temperatureMin: number
+  temperatureMax: number
+  feedingsPerDay: number
+  amountMl: string
+  feedingMethod: string
+  temperatureCheck: string
+  preparationNotes: string
+  seedFoodName: string
+  seedFoodAmount: string
+  seedFoodNotes: string
+  feedingNotes: string
+  fullnessNotes: string
+  warningNotes: string
+  revision: number
+  updatedAt?: string
+}
+
 export interface ParentInfo {
   source: 'LIBRARY' | 'MANUAL'
   id?: string | null
@@ -52,6 +86,7 @@ export interface ParentInfo {
 }
 
 export interface OffspringGroup { species: string; count: number }
+export interface ClutchOffspring { id: string; ringNumber: string }
 
 export interface BreedingPairDoc {
   id: string
@@ -79,6 +114,7 @@ export interface HatchingRecordDoc {
   eggs: number
   hatched: number
   offspringGroups?: OffspringGroup[]
+  offspring?: ClutchOffspring[]
   offspringRegistered?: number
   status: 'INCUBATING' | 'COMPLETED' | 'CANCELLED'
   revision: number
@@ -90,6 +126,7 @@ export interface HatchingRecordDoc {
 export interface SaleRecordDoc {
   id: string
   parrotId: string
+  breed: string
   species: string
   ringNumber: string
   gender: GenderCode

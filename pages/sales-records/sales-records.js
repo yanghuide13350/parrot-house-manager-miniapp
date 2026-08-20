@@ -12,7 +12,7 @@ Page({
         this.unsubscribe(); },
     refresh() {
         const query = String(this.data.search || '').toLowerCase();
-        const sales = store_1.store.salesRecords.filter(item => !query || `${item.buyer} ${item.ringNumber} ${item.species}`.toLowerCase().includes(query)).map(item => ({ ...item, genderLabel: types_1.GENDER_LABEL[item.gender], visitLabel: VISIT_LABEL[item.visitStatus], returned: item.status === 'RETURNED' }));
+        const sales = store_1.store.salesRecords.filter(item => !query || `${item.buyer} ${item.ringNumber} ${item.breed} ${item.species}`.toLowerCase().includes(query)).map(item => ({ ...item, ringNumber: item.ringNumber || '需补充', genderLabel: types_1.GENDER_LABEL[item.gender], visitLabel: VISIT_LABEL[item.visitStatus], returned: item.status === 'RETURNED' }));
         this.setData({ sales, stats: { total: store_1.store.dashboard.stats.salesTotal, revenue: Number(store_1.store.dashboard.stats.revenueCents || 0) / 100, returnRate: store_1.store.dashboard.stats.returnRate } });
     },
     inputSearch(event) { this.setData({ search: event.detail.value }, () => this.refresh()); },

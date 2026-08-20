@@ -13,19 +13,20 @@ Page({
     if (!record) return
     const father = store.getParrot(record.maleId), mother = store.getParrot(record.femaleId)
     const birthDateLabel = String(record.completedAt || record.startDate || '').slice(0, 10)
-    if (!this.data.loaded) this.setData({ record, father, mother, birthDateLabel, chicks: this.initialChicks(record), loaded: true })
+    if (!this.data.loaded) this.setData({ record, father, mother, birthDateLabel, chicks: this.initialChicks(record, father, mother), loaded: true })
     else this.setData({ record, father, mother, birthDateLabel })
   },
-  initialChicks(record: any) {
+  initialChicks(record: any, father: any, mother: any) {
     const species = (record.offspringGroups || []).flatMap((group: any) => Array.from({ length: group.count }, () => group.species))
-    return Array.from({ length: record.hatched }, (_item, index) => ({ index: index + 1, species: species[index] || record.species || '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', privateNotes: '' }))
+    const breed = father?.breed || mother?.breed || ''
+    return Array.from({ length: record.hatched }, (_item, index) => ({ index: index + 1, breed, species: species[index] || record.species || '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', privateNotes: '' }))
   },
   input(event: any) { const index = Number(event.currentTarget.dataset.index), key = event.currentTarget.dataset.key; this.setData({ [`chicks[${index}].${key}`]: event.detail.value }) },
   chooseGender(event: any) { const index = Number(event.currentTarget.dataset.index); this.setData({ [`chicks[${index}].gender`]: event.currentTarget.dataset.gender }) },
   async submit() {
     if (this.data.submitting || !this.data.record) return
-    const missingSpecies = this.data.chicks.some((item: any) => !String(item.species || '').trim())
-    if (missingSpecies) { wx.showToast({ title: '请填写每只幼鸟的品种', icon: 'none' }); return }
+    const missingBreedOrName = this.data.chicks.some((item: any) => !String(item.breed || '').trim() || !String(item.species || '').trim())
+    if (missingBreedOrName) { wx.showToast({ title: '请填写每只幼鸟的品种和名称', icon: 'none' }); return }
     this.setData({ submitting: true })
     try {
       const result = await store.createFromClutch(this.id, this.data.chicks)

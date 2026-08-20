@@ -6,6 +6,7 @@ const navigation_1 = require("../../utils/navigation");
 Page({
     data: { parrot: null, media: [], invalid: false, loading: true, activeIndex: 0, token: '', shareTopStyle: '' },
     async onLoad(options) {
+        var _a;
         const token = String(options.token || '');
         this.syncTopBar();
         if (!token) {
@@ -18,9 +19,10 @@ Page({
                 this.setData({ invalid: true, loading: false, token });
                 return;
             }
-            const value = result.parrot, parentLabel = (parent) => parent ? `${parent.species}${parent.ringNumber ? ` · ${parent.ringNumber}` : ''}` : '暂未录入';
+            const value = result.parrot;
+            const parentLabel = (parent) => parent ? `${parent.species}${parent.ringNumber ? ` · ${parent.ringNumber}` : ''}` : '暂未录入';
             const photos = (value.media || []).filter((item) => item.type === 'image' && item.url);
-            const parrot = { ...value, gender: types_1.GENDER_LABEL[value.gender] || value.gender, age: value.ageLabel, price: Number(value.priceCents || 0) / 100, desc: value.publicIntro, birthDateLabel: String(value.birthDate || '').slice(0, 10), fatherLabel: parentLabel(value.father), motherLabel: parentLabel(value.mother), clutchLabel: value.clutch ? `本窝出壳 ${value.clutch.hatched} 只` : '', image: (photos[0] === null || photos[0] === void 0 ? void 0 : photos[0].url) || types_1.PLACEHOLDER_IMAGE };
+            const parrot = { ...value, ringNumber: value.ringNumber || '需补充', gender: types_1.GENDER_LABEL[value.gender] || value.gender, age: value.ageLabel, price: Number(value.priceCents || 0) / 100, desc: value.publicIntro, birthDateLabel: String(value.birthDate || '').slice(0, 10), fatherLabel: parentLabel(value.father), motherLabel: parentLabel(value.mother), clutchLabel: value.clutch ? `本窝出壳 ${value.clutch.hatched} 只` : '', image: ((_a = photos[0]) === null || _a === void 0 ? void 0 : _a.url) || types_1.PLACEHOLDER_IMAGE };
             this.setData({ parrot, media: photos.length ? photos : [{ type: 'image', url: types_1.PLACEHOLDER_IMAGE }], invalid: false, loading: false, token });
         }
         catch (error) {

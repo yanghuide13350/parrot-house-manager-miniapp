@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const store_1 = require("../../utils/store");
 Page({
-    data: { parrots: [], stats: { total: 0, forSale: 0, sold: 0, returned: 0, paired: 0, incubating: 0, revenue: 0 }, species: [], trend: [], trendMode: 'revenue', chartLabel: '¥0', pullRefreshing: false },
+    data: { parrots: [], stats: { total: 0, forSale: 0, sold: 0, returned: 0, breeder: 0, paired: 0, incubating: 0, revenue: 0 }, species: [], trend: [], trendMode: 'revenue', chartLabel: '¥0', pullRefreshing: false },
     onLoad() { this.unsubscribe = store_1.store.subscribe(() => this.refresh()); store_1.store.hydrate(); this.refresh(); },
     onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar)
         tabBar.setData({ selected: 0, hidden: false }); },
@@ -67,6 +67,7 @@ Page({
     },
     goParrots(event) { const filter = event.currentTarget.dataset.filter || ''; wx.removeStorageSync('parrot-pro-filter'); wx.setStorageSync('parrot-pro-filter-intent', { status: filter, timestamp: Date.now() }); wx.switchTab({ url: '/pages/parrots/parrots' }); },
     goSales() { wx.navigateTo({ url: '/pages/sales-records/sales-records' }); },
+    goFeedingPlans() { wx.navigateTo({ url: '/pages/feeding-plans/feeding-plans' }); },
     goAccess() { wx.navigateTo({ url: '/pages/access/access' }); },
     unsubscribe: null,
     canvasReady: false

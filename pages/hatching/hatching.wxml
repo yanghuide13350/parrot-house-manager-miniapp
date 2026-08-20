@@ -7,10 +7,13 @@
   <view class="page-pad search-row"><view class="search-box"><app-icon class="search-mark" name="search" size="20"/><input value="{{search}}" bindinput="inputSearch" placeholder="搜索父母鸟圈号..."/><text wx:if="{{search}}" class="clear" bindtap="clearSearch">×</text></view></view>
   <view class="page-pad records" wx:if="{{records.length}}">
     <view wx:for="{{records}}" wx:key="id" class="record card">
-      <view class="between"><view><view class="record-species">{{item.species}}</view><view class="record-rings">{{item.maleRingNumber}} × {{item.femaleRingNumber}}</view></view><view class="record-status {{item.status === 'COMPLETED' ? 'done' : ''}}">{{item.status === 'COMPLETED' ? '已完成' : '孵化中'}}</view></view>
-      <view class="progress-row"><view class="progress-track"><view class="progress-fill" style="width: {{item.eggs ? item.hatched / item.eggs * 100 : 0}}%;"></view></view><text>{{item.hatched}} / {{item.eggs}}</text></view>
-      <view wx:if="{{item.offspringGroups.length}}" class="offspring-summary">{{item.offspringGroups[0].species}} {{item.offspringGroups[0].count}}只<text wx:if="{{item.offspringGroups.length > 1}}">等 {{item.offspringGroups.length}} 个品种</text></view>
-      <view class="record-meta"><text>开始于 {{item.startDate}}</text><text>{{item.status === 'COMPLETED' ? '任务已结束' : '记录出壳进度'}}</text></view>
+      <view class="parent-flow">
+        <view class="parent-side"><text class="bird-role">公鸟</text><image class="parent-avatar {{item.maleDetailId ? 'tap' : ''}}" src="{{item.maleImage}}" mode="aspectFill" data-id="{{item.maleDetailId}}" bindtap="viewParrot"/><strong>{{item.maleName}}</strong><small>圈号：{{item.maleRingLabel}}</small></view>
+        <view class="hatching-state"><view class="record-status {{item.status === 'COMPLETED' ? 'done' : ''}}">{{item.status === 'COMPLETED' ? '已完成' : '孵化中'}}</view><strong class="state-count">{{item.hatched}} / {{item.eggs}}</strong><text class="state-label">{{item.status === 'COMPLETED' ? '任务结束' : '已出壳'}}</text></view>
+        <view class="parent-side"><text class="bird-role">母鸟</text><image class="parent-avatar {{item.femaleDetailId ? 'tap' : ''}}" src="{{item.femaleImage}}" mode="aspectFill" data-id="{{item.femaleDetailId}}" bindtap="viewParrot"/><strong>{{item.femaleName}}</strong><small>圈号：{{item.femaleRingLabel}}</small></view>
+      </view>
+      <view class="record-meta"><text>品种：{{item.species}}</text><text>开始于 {{item.startDate}}</text></view>
+      <view wx:if="{{item.offspringGroups.length}}" class="offspring-summary">本窝：{{item.offspringGroups[0].species}} {{item.offspringGroups[0].count}}只<text wx:if="{{item.offspringGroups.length > 1}}">等 {{item.offspringGroups.length}} 个品种</text></view>
       <view class="record-actions" wx:if="{{item.status !== 'COMPLETED'}}"><button class="button-light" disabled="{{submitting}}" data-id="{{item.id}}" bindtap="openUpdate">更新进度</button><button class="button-dark" disabled="{{submitting}}" data-id="{{item.id}}" bindtap="complete">完成孵化</button></view>
       <view wx:else class="completed-actions"><button wx:if="{{item.hatched > 0 && !item.offspringRegistered}}" class="button-dark intake-button" data-id="{{item.id}}" bindtap="intakeChicks">录入本窝 {{item.hatched}} 只幼鸟</button><view wx:elif="{{item.hatched > 0}}" class="intake-complete">已录入 {{item.offspringRegistered}} / {{item.hatched}} 只幼鸟</view><button wx:if="{{canRemoveCompleted}}" class="remove-button" disabled="{{submitting}}" data-id="{{item.id}}" bindtap="remove">移除已完成档案</button></view>
     </view>

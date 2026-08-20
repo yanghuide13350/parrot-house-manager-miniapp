@@ -14,7 +14,7 @@ Page({
       const value = result.parrot
       const parentLabel = (parent: any) => parent ? `${parent.species}${parent.ringNumber ? ` · ${parent.ringNumber}` : ''}` : '暂未录入'
       const photos = (value.media || []).filter((item: any) => item.type === 'image' && item.url)
-      const parrot = { ...value, gender: GENDER_LABEL[value.gender] || value.gender, age: value.ageLabel, price: Number(value.priceCents || 0) / 100, desc: value.publicIntro, birthDateLabel: String(value.birthDate || '').slice(0, 10), fatherLabel: parentLabel(value.father), motherLabel: parentLabel(value.mother), clutchLabel: value.clutch ? `本窝出壳 ${value.clutch.hatched} 只` : '', image: photos[0]?.url || PLACEHOLDER_IMAGE }
+      const parrot = { ...value, ringNumber: value.ringNumber || '需补充', gender: GENDER_LABEL[value.gender] || value.gender, age: value.ageLabel, price: Number(value.priceCents || 0) / 100, desc: value.publicIntro, birthDateLabel: String(value.birthDate || '').slice(0, 10), fatherLabel: parentLabel(value.father), motherLabel: parentLabel(value.mother), clutchLabel: value.clutch ? `本窝出壳 ${value.clutch.hatched} 只` : '', image: photos[0]?.url || PLACEHOLDER_IMAGE }
       this.setData({ parrot, media: photos.length ? photos : [{ type: 'image', url: PLACEHOLDER_IMAGE }], invalid: false, loading: false, token })
     } catch (error) { this.setData({ invalid: true, loading: false, token }) }
   },

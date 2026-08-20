@@ -5,14 +5,20 @@ const store_1 = require("../../utils/store");
 const navigation_1 = require("../../utils/navigation");
 const date_1 = require("../../utils/date");
 const config_1 = require("../../config");
+const repository_1 = require("../../utils/repository");
 const SHARE_CACHE_KEY = 'parrot-pro-share-cache';
+const ageDays = (birthDate) => Math.max(0, Math.floor((Date.now() - new Date(`${birthDate}T00:00:00+08:00`).getTime()) / 86400000));
+const planStart = (plan) => Number(plan.ageFromMonths || 0) * 31 + Number(plan.ageFromDays || 0);
+const planEnd = (plan) => Number(plan.ageToMonths || 0) * 31 + Number(plan.ageToDays || 0);
 Page({
-    data: { parrot: null, genderLabel: '', media: [], clutches: [], activeIndex: 0, showPairing: false, showSale: false, showProgress: false, eligible: [], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
+    data: { parrot: null, genderLabel: '', media: [], clutches: [], visibleClutches: [], clutchTotal: 0, showAllClutches: false, activeIndex: 0, showPairing: false, showSale: false, showProgress: false, showFeedingPlan: false, showFeedingPicker: false, feedingPlans: [], feedingPlan: null, eligible: [], selectedMate: '', selectedFeedingPlan: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
     onLoad(options) { wx.hideShareMenu(); this.id = options.id; this.syncTopBar(); this.restoreShareState(); this.unsubscribe = store_1.store.subscribe(() => this.refresh()); this.refresh(); },
     onUnload() { if (this.unsubscribe)
         this.unsubscribe(); },
-    onShow() { this.syncTopBar(); this.restoreShareState(); if (this.id)
-        this.refresh(); },
+    onShow() { this.syncTopBar(); this.restoreShareState(); if (this.id) {
+        this.refresh();
+        this.loadFeedingPlans();
+    } },
     syncTopBar() {
         const menu = typeof wx.getMenuButtonBoundingClientRect === 'function' ? wx.getMenuButtonBoundingClientRect() : null;
         const windowInfo = typeof wx.getWindowInfo === 'function' ? wx.getWindowInfo() : null;
@@ -57,10 +63,44 @@ Page({
             this.writeShareCache(cache);
         }
     },
-    refresh() { const parrot = store_1.store.getParrot(this.id); if (!parrot)
-        return; const photos = (parrot.media || []).filter(item => item.type === 'image' && item.url), media = photos.length ? photos : [{ type: 'image', url: parrot.image }], clutches = store_1.store.hatchingRecords.filter(item => item.maleId === this.id || item.femaleId === this.id).sort((a, b) => { const paired = String(a.pairingDate || a.startDate || a.createdAt || '').localeCompare(String(b.pairingDate || b.startDate || b.createdAt || '')); if (paired)
-            return paired; const hatched = String(a.startDate || '').localeCompare(String(b.startDate || '')); return hatched || String(a.createdAt || '').localeCompare(String(b.createdAt || '')); }).map((item, index) => { const isMale = item.maleId === this.id, partnerSpecies = isMale ? item.femaleSpecies : item.maleSpecies, partnerRing = isMale ? item.femaleRingNumber : item.maleRingNumber, registered = Number(item.offspringRegistered || 0); return { ...item, clutchNo: index + 1, partnerText: `${partnerSpecies || '配偶'}${partnerRing ? `｜${partnerRing}` : ''}`, pairingDateLabel: item.pairingDate ? String(item.pairingDate).slice(0, 10) : '未记录', offspringText: (item.offspringGroups || []).map(group => `${group.species} ${group.count}只`).join('、') || '暂未录入品种明细', canIntake: item.status === 'COMPLETED' && item.hatched > 0 && registered === 0, intakeLabel: registered ? `已录入 ${registered} / ${item.hatched} 只幼鸟` : `录入本窝 ${item.hatched} 只幼鸟` }; }); this.setData({ parrot, genderLabel: types_1.GENDER_LABEL[parrot.gender], media, clutches, price: String(parrot.price || '') }); },
+    refresh() { const source = store_1.store.getParrot(this.id); if (!source)
+        return; const parrot = { ...source, ringLabel: source.ringNumber || '需补充' }; const photos = (parrot.media || []).filter(item => item.type === 'image' && item.url); const media = photos.length ? photos : [{ type: 'image', url: parrot.image }], clutches = store_1.store.hatchingRecords.filter(item => item.maleId === this.id || item.femaleId === this.id).sort((a, b) => { const paired = String(a.pairingDate || a.startDate || a.createdAt || '').localeCompare(String(b.pairingDate || b.startDate || b.createdAt || '')); if (paired)
+        return paired; const hatched = String(a.startDate || '').localeCompare(String(b.startDate || '')); return hatched || String(a.createdAt || '').localeCompare(String(b.createdAt || '')); }).map((item, index) => { const isMale = item.maleId === this.id, partnerSpecies = isMale ? item.femaleSpecies : item.maleSpecies, partnerRing = isMale ? item.femaleRingNumber : item.maleRingNumber, registered = Number(item.offspringRegistered || 0), rings = (item.offspring || []).map(chick => chick.ringNumber || '未戴环'); return { ...item, clutchNo: index + 1, partnerText: `${partnerSpecies || '配偶'}${partnerRing ? `｜${partnerRing}` : ''}`, pairingDateLabel: item.pairingDate ? String(item.pairingDate).slice(0, 10) : '未记录', offspringRingText: rings.length ? rings.join('、') : '暂无圈号', canIntake: item.status === 'COMPLETED' && item.hatched > 0 && registered === 0, intakeLabel: registered ? `已录入 ${registered} / ${item.hatched} 只幼鸟` : `录入本窝 ${item.hatched} 只幼鸟` }; }); const visibleClutches = this.data.showAllClutches ? clutches : clutches.slice(-2); this.setData({ parrot, genderLabel: types_1.GENDER_LABEL[parrot.gender], media, clutches, visibleClutches, clutchTotal: clutches.length, price: String(parrot.price || '') }); },
+    toggleClutches() { this.setData({ showAllClutches: !this.data.showAllClutches }, () => this.refresh()); },
     swiperChange(event) { this.setData({ activeIndex: event.detail.current }); },
+    async loadFeedingPlans() { try {
+        const feedingPlans = await repository_1.repository.feedingPlans(), current = store_1.store.getParrot(this.id), currentAge = current ? ageDays(current.birthDate) : -1, feedingPlan = feedingPlans.find(item => item.id === (current === null || current === void 0 ? void 0 : current.feedingPlanId) && item.isEnabled) || feedingPlans.find(item => item.isEnabled && item.species === (current === null || current === void 0 ? void 0 : current.breed) && currentAge >= planStart(item) && currentAge <= planEnd(item)) || null;
+        this.setData({ feedingPlans, feedingPlan });
+    }
+    catch (error) {
+        wx.showToast({ title: error.message || '喂养方案加载失败', icon: 'none' });
+    } },
+    openFeedingPlan() { if (this.data.feedingPlan)
+        this.setData({ showFeedingPlan: true });
+    else
+        this.openFeedingPicker(); },
+    closeFeedingPlan() { this.setData({ showFeedingPlan: false }); },
+    openFeedingPicker() { var _a; this.setData({ showFeedingPlan: false, showFeedingPicker: true, selectedFeedingPlan: this.data.parrot.feedingPlanId || ((_a = this.data.feedingPlan) === null || _a === void 0 ? void 0 : _a.id) || '' }); },
+    closeFeedingPicker() { if (!this.data.submitting)
+        this.setData({ showFeedingPicker: false }); },
+    chooseFeedingPlan(event) { this.setData({ selectedFeedingPlan: event.currentTarget.dataset.id }); },
+    async confirmFeedingPlan() { if (!this.data.selectedFeedingPlan || this.data.submitting)
+        return; this.setData({ submitting: true }); try {
+        await store_1.store.setFeedingPlan(this.id, this.data.selectedFeedingPlan);
+        const feedingPlan = this.data.feedingPlans.find((item) => item.id === this.data.selectedFeedingPlan) || null;
+        this.setData({ showFeedingPicker: false, feedingPlan });
+        wx.showToast({ title: '已选择喂养方案', icon: 'success' });
+    }
+    catch (error) {
+        wx.showToast({ title: error.message || '设置失败', icon: 'none' });
+    }
+    finally {
+        this.setData({ submitting: false });
+    } },
+    copyFeedingGuide() { const item = this.data.feedingPlan; if (!item)
+        return; const mixed = item.feedingType === 'MIXED', solid = item.feedingType === 'SOLID', lines = [`【${this.data.parrot.species}喂养指南】`, `阶段：${item.stage}（${item.ageFromMonths}月${item.ageFromDays || 0}天–${item.ageToMonths}月${item.ageToDays || 0}天）`, `食物：${mixed ? '奶粉 + 谷子' : solid ? '谷子 / 固体食物' : '奶粉'}`, `每天：${item.feedingsPerDay || '请按说明'}次；单次：${item.amountMl || '请按说明'}`]; if (!solid)
+        lines.push(`奶粉：${item.formulaName || '请咨询卖家'}`, `冲泡：${item.waterMl || '—'}ml 水 + ${item.powderScoops || '—'}`, `水温：${item.temperatureMin}–${item.temperatureMax}℃`, `水温判断：${item.temperatureCheck || '请按方案操作'}`); if (mixed || solid)
+        lines.push(`谷子/固体食物：${item.seedFoodName || '请按说明'}`, `参考量：${item.seedFoodAmount || '请按说明'}`, `说明：${item.seedFoodNotes || '请按方案操作'}`); lines.push(`方式：${item.feedingMethod || '请按说明'}`, '', `注意事项：${item.feedingNotes || '请按方案操作'}`, `喂饱判断：${item.fullnessNotes || '请观察嗉囊和精神状态'}`, `异常提醒：${item.warningNotes || '如有异常请及时联系卖家或兽医'}`); wx.setClipboardData({ data: lines.join('\n') }); },
     openMedia(event) {
         const item = this.data.media[Number(event.currentTarget.dataset.index)];
         if (!item || !item.url)
@@ -69,6 +109,8 @@ Page({
         wx.previewImage({ current: item.url, urls });
     },
     goBack() { (0, navigation_1.backOrSwitchTab)(); },
+    viewRelatedParrot(event) { const id = String(event.currentTarget.dataset.id || ''); if (!id || id === this.id || !store_1.store.getParrot(id))
+        return; wx.navigateTo({ url: `/pages/parrot-detail/parrot-detail?id=${encodeURIComponent(id)}` }); },
     edit() { wx.navigateTo({ url: `/pages/parrot-form/parrot-form?id=${this.id}` }); },
     remove() { if (this.data.submitting)
         return; wx.showModal({ title: '确认删除档案', content: '档案会隐藏并保留后台审计。', success: async (result) => { if (!result.confirm || this.data.submitting)
@@ -166,6 +208,11 @@ Page({
         this.setData({ submitting: false });
     } },
     viewHatching() { wx.switchTab({ url: '/pages/hatching/hatching' }); },
+    viewClutchParrots(event) { const record = store_1.store.hatchingRecords.find(item => item.id === event.currentTarget.dataset.id); if (!record)
+        return; if (!Number(record.offspringRegistered || 0)) {
+        wx.showToast({ title: '本窝暂未录入幼鸟档案', icon: 'none' });
+        return;
+    } wx.setStorageSync('parrot-pro-filter-intent', { birthHatchingRecordId: record.id, label: `第${event.currentTarget.dataset.no}窝幼鸟`, timestamp: Date.now() }); wx.switchTab({ url: '/pages/parrots/parrots' }); },
     intakeChicks(event) { const record = store_1.store.hatchingRecords.find(item => item.id === event.currentTarget.dataset.id); if (!record || record.status !== 'COMPLETED' || record.hatched < 1)
         return; wx.navigateTo({ url: `/pages/clutch-intake/clutch-intake?id=${record.id}` }); },
     sharePublicUrl(token) { return `${String(config_1.API_BASE_URL || '').replace(/\/+$/, '')}/share/${encodeURIComponent(token)}`; },

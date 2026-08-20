@@ -9,29 +9,45 @@ Page({
     onLoad(options) { this.id = String(options.id || ''); this.unsubscribe = store_1.store.subscribe(() => this.refresh()); store_1.store.hydrate(); this.refresh(); },
     onUnload() { if (this.unsubscribe)
         this.unsubscribe(); },
-    refresh() { const record = store_1.store.hatchingRecords.find(item => item.id === this.id); if (!record)
-        return; const father = store_1.store.getParrot(record.maleId), mother = store_1.store.getParrot(record.femaleId), birthDateLabel = String(record.completedAt || record.startDate || '').slice(0, 10); if (!this.data.loaded)
-        this.setData({ record, father, mother, birthDateLabel, chicks: this.initialChicks(record), loaded: true });
-    else
-        this.setData({ record, father, mother, birthDateLabel }); },
-    initialChicks(record) { const species = (record.offspringGroups || []).flatMap(group => Array.from({ length: group.count }, () => group.species)); return Array.from({ length: record.hatched }, (_item, index) => ({ index: index + 1, species: species[index] || record.species || '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', privateNotes: '' })); },
+    refresh() {
+        const record = store_1.store.hatchingRecords.find(item => item.id === this.id);
+        if (!record)
+            return;
+        const father = store_1.store.getParrot(record.maleId), mother = store_1.store.getParrot(record.femaleId);
+        const birthDateLabel = String(record.completedAt || record.startDate || '').slice(0, 10);
+        if (!this.data.loaded)
+            this.setData({ record, father, mother, birthDateLabel, chicks: this.initialChicks(record, father, mother), loaded: true });
+        else
+            this.setData({ record, father, mother, birthDateLabel });
+    },
+    initialChicks(record, father, mother) {
+        const species = (record.offspringGroups || []).flatMap((group) => Array.from({ length: group.count }, () => group.species));
+        const breed = (father === null || father === void 0 ? void 0 : father.breed) || (mother === null || mother === void 0 ? void 0 : mother.breed) || '';
+        return Array.from({ length: record.hatched }, (_item, index) => ({ index: index + 1, breed, species: species[index] || record.species || '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', privateNotes: '' }));
+    },
     input(event) { const index = Number(event.currentTarget.dataset.index), key = event.currentTarget.dataset.key; this.setData({ [`chicks[${index}].${key}`]: event.detail.value }); },
     chooseGender(event) { const index = Number(event.currentTarget.dataset.index); this.setData({ [`chicks[${index}].gender`]: event.currentTarget.dataset.gender }); },
-    async submit() { if (this.data.submitting || !this.data.record)
-        return; if (this.data.chicks.some(item => !String(item.species || '').trim())) {
-        wx.showToast({ title: '请填写每只幼鸟的品种', icon: 'none' });
-        return;
-    } this.setData({ submitting: true }); try {
-        const result = await store_1.store.createFromClutch(this.id, this.data.chicks);
-        wx.showToast({ title: `已录入${result.ids.length}只幼鸟`, icon: 'success' });
-        setTimeout(() => (0, navigation_1.backOrSwitchTab)('/pages/hatching/hatching'), 500);
-    }
-    catch (error) {
-        wx.showToast({ title: error.message || '录入失败', icon: 'none' });
-    }
-    finally {
-        this.setData({ submitting: false });
-    } },
+    async submit() {
+        if (this.data.submitting || !this.data.record)
+            return;
+        const missingBreedOrName = this.data.chicks.some((item) => !String(item.breed || '').trim() || !String(item.species || '').trim());
+        if (missingBreedOrName) {
+            wx.showToast({ title: '请填写每只幼鸟的品种和名称', icon: 'none' });
+            return;
+        }
+        this.setData({ submitting: true });
+        try {
+            const result = await store_1.store.createFromClutch(this.id, this.data.chicks);
+            wx.showToast({ title: `已录入${result.ids.length}只幼鸟`, icon: 'success' });
+            setTimeout(() => (0, navigation_1.backOrSwitchTab)('/pages/hatching/hatching'), 500);
+        }
+        catch (error) {
+            wx.showToast({ title: error.message || '录入失败', icon: 'none' });
+        }
+        finally {
+            this.setData({ submitting: false });
+        }
+    },
     goBack() { (0, navigation_1.backOrSwitchTab)('/pages/hatching/hatching'); },
     id: '',
     unsubscribe: null
