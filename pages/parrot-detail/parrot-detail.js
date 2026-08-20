@@ -11,7 +11,7 @@ const ageDays = (birthDate) => Math.max(0, Math.floor((Date.now() - new Date(`${
 const planStart = (plan) => Number(plan.ageFromMonths || 0) * 31 + Number(plan.ageFromDays || 0);
 const planEnd = (plan) => Number(plan.ageToMonths || 0) * 31 + Number(plan.ageToDays || 0);
 Page({
-    data: { parrot: null, genderLabel: '', media: [], clutches: [], visibleClutches: [], clutchTotal: 0, showAllClutches: false, activeIndex: 0, showPairing: false, showSale: false, showProgress: false, showFeedingPlan: false, showFeedingPicker: false, feedingPlans: [], feedingPlan: null, eligible: [], selectedMate: '', selectedFeedingPlan: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
+    data: { parrot: null, genderLabel: '', media: [], clutches: [], visibleClutches: [], clutchTotal: 0, showAllClutches: false, activeIndex: 0, showPairing: false, showSale: false, showProgress: false, showFeedingPlan: false, feedingPlan: null, eligible: [], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
     onLoad(options) { wx.hideShareMenu(); this.id = options.id; this.syncTopBar(); this.restoreShareState(); this.unsubscribe = store_1.store.subscribe(() => this.refresh()); this.refresh(); },
     onUnload() { if (this.unsubscribe)
         this.unsubscribe(); },
@@ -69,34 +69,15 @@ Page({
     toggleClutches() { this.setData({ showAllClutches: !this.data.showAllClutches }, () => this.refresh()); },
     swiperChange(event) { this.setData({ activeIndex: event.detail.current }); },
     async loadFeedingPlans() { try {
-        const feedingPlans = await repository_1.repository.feedingPlans(), current = store_1.store.getParrot(this.id), currentAge = current ? ageDays(current.birthDate) : -1, feedingPlan = feedingPlans.find(item => item.id === (current === null || current === void 0 ? void 0 : current.feedingPlanId) && item.isEnabled) || feedingPlans.find(item => item.isEnabled && item.species === (current === null || current === void 0 ? void 0 : current.breed) && currentAge >= planStart(item) && currentAge <= planEnd(item)) || null;
-        this.setData({ feedingPlans, feedingPlan });
+        const feedingPlans = await repository_1.repository.feedingPlans(), current = store_1.store.getParrot(this.id), currentAge = current ? ageDays(current.birthDate) : -1, feedingPlan = feedingPlans.find(item => item.isEnabled && item.species === (current === null || current === void 0 ? void 0 : current.breed) && currentAge >= planStart(item) && currentAge <= planEnd(item)) || null;
+        this.setData({ feedingPlan });
     }
     catch (error) {
         wx.showToast({ title: error.message || '喂养方案加载失败', icon: 'none' });
     } },
     openFeedingPlan() { if (this.data.feedingPlan)
-        this.setData({ showFeedingPlan: true });
-    else
-        this.openFeedingPicker(); },
+        this.setData({ showFeedingPlan: true }); },
     closeFeedingPlan() { this.setData({ showFeedingPlan: false }); },
-    openFeedingPicker() { var _a; this.setData({ showFeedingPlan: false, showFeedingPicker: true, selectedFeedingPlan: this.data.parrot.feedingPlanId || ((_a = this.data.feedingPlan) === null || _a === void 0 ? void 0 : _a.id) || '' }); },
-    closeFeedingPicker() { if (!this.data.submitting)
-        this.setData({ showFeedingPicker: false }); },
-    chooseFeedingPlan(event) { this.setData({ selectedFeedingPlan: event.currentTarget.dataset.id }); },
-    async confirmFeedingPlan() { if (!this.data.selectedFeedingPlan || this.data.submitting)
-        return; this.setData({ submitting: true }); try {
-        await store_1.store.setFeedingPlan(this.id, this.data.selectedFeedingPlan);
-        const feedingPlan = this.data.feedingPlans.find((item) => item.id === this.data.selectedFeedingPlan) || null;
-        this.setData({ showFeedingPicker: false, feedingPlan });
-        wx.showToast({ title: '已选择喂养方案', icon: 'success' });
-    }
-    catch (error) {
-        wx.showToast({ title: error.message || '设置失败', icon: 'none' });
-    }
-    finally {
-        this.setData({ submitting: false });
-    } },
     copyFeedingGuide() { const item = this.data.feedingPlan; if (!item)
         return; const mixed = item.feedingType === 'MIXED', solid = item.feedingType === 'SOLID', lines = [`【${this.data.parrot.species}喂养指南】`, `阶段：${item.stage}（${item.ageFromMonths}月${item.ageFromDays || 0}天–${item.ageToMonths}月${item.ageToDays || 0}天）`, `食物：${mixed ? '奶粉 + 谷子' : solid ? '谷子 / 固体食物' : '奶粉'}`, `每天：${item.feedingsPerDay || '请按说明'}次；单次：${item.amountMl || '请按说明'}`]; if (!solid)
         lines.push(`奶粉：${item.formulaName || '请咨询卖家'}`, `冲泡：${item.waterMl || '—'}ml 水 + ${item.powderScoops || '—'}`, `水温：${item.temperatureMin}–${item.temperatureMax}℃`, `水温判断：${item.temperatureCheck || '请按方案操作'}`); if (mixed || solid)

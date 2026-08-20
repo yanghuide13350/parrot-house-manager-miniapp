@@ -3,15 +3,28 @@ import { store } from '../../utils/store'
 import { todayDate } from '../../utils/date'
 
 Page({
-  data: { pairs: [] as any[], breeders: [] as any[], selected: null as any, showModal: false, eggCount: '3', submitting: false },
+  data: { pairs: [] as any[], breeders: [] as any[], search: '', selected: null as any, showModal: false, eggCount: '3', submitting: false },
   onLoad() { this.unsubscribe = store.subscribe(() => this.refresh()); store.hydrate(); this.refresh() },
   onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ selected: 2, hidden: false }); this.refresh() },
-  onUnload() { if (this.unsubscribe) this.unsubscribe() },
+  onUnload() { if (this.unsubscribe) this.unsubscribe(); this.cancelSearchRefresh() },
+  async refreshFromTab() {
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 })
+    await store.hydrate(true)
+    this.refresh()
+    if (store.lastError) wx.showToast({ title: store.lastError, icon: 'none' })
+    else wx.showToast({ title: '已刷新', icon: 'none' })
+  },
   refresh() {
-    const pairs = store.pairs.map(pair => ({ ...pair, male: { ...pair.male, ringLabel: pair.male.ringNumber || '需补充' }, female: { ...pair.female, ringLabel: pair.female.ringNumber || '需补充' }, breed: pair.male.breed || '', species: pair.male.species, status: pair.status === 'INCUBATING' ? ParrotStatusCode.INCUBATING : ParrotStatusCode.PAIRED, duration: pair.male.pairDays || 0 }))
-    const breeders = store.parrots.filter(item => item.status === ParrotStatusCode.BREEDER).map(item => ({ ...item, genderLabel: GENDER_LABEL[item.gender], ringLabel: item.ringNumber || '需补充' }))
+    const query = String(this.data.search || '').trim().toLowerCase()
+    const matches = (item: any) => !query || [item.breed, item.species, item.ringNumber].some(value => String(value || '').toLowerCase().includes(query))
+    const pairs = store.pairs.filter(pair => matches(pair.male) || matches(pair.female)).map(pair => ({ ...pair, male: { ...pair.male, ringLabel: pair.male.ringNumber || '需补充' }, female: { ...pair.female, ringLabel: pair.female.ringNumber || '需补充' }, breed: pair.male.breed || '', species: pair.male.species, status: pair.status === 'INCUBATING' ? ParrotStatusCode.INCUBATING : ParrotStatusCode.PAIRED, duration: pair.male.pairDays || 0 }))
+    const breeders = store.parrots.filter(item => item.status === ParrotStatusCode.BREEDER && matches(item)).map(item => ({ ...item, genderLabel: GENDER_LABEL[item.gender], ringLabel: item.ringNumber || '需补充' }))
     this.setData({ pairs, breeders })
   },
+  inputSearch(event: any) { this.setData({ search: event.detail.value }); this.scheduleSearchRefresh() },
+  scheduleSearchRefresh() { this.cancelSearchRefresh(); this.searchDebounceTimer = setTimeout(() => { this.searchDebounceTimer = null; this.refresh() }, 300) },
+  cancelSearchRefresh() { if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer); this.searchDebounceTimer = null },
+  clearSearch() { this.cancelSearchRefresh(); this.setData({ search: '' }, () => this.refresh()) },
   setTabHidden(hidden: boolean) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ hidden }) },
   openProgress(event: any) { const pair = this.data.pairs.find((item: any) => item.male.id === event.currentTarget.dataset.male); this.setTabHidden(true); this.setData({ selected: pair, showModal: true, eggCount: '3' }) },
   closeModal() { if (this.data.submitting) return; this.setData({ showModal: false }); this.setTabHidden(false) },
@@ -33,5 +46,6 @@ Page({
   viewHatching(event: any) { wx.setStorageSync('parrot-pro-hatching-search-intent', { ring: String(event.currentTarget.dataset.ring || ''), timestamp: Date.now() }); wx.switchTab({ url: '/pages/hatching/hatching' }) },
   viewParrot(event: any) { wx.navigateTo({ url: `/pages/parrot-detail/parrot-detail?id=${event.currentTarget.dataset.id}` }) },
   noop() {},
-  unsubscribe: null as any
+  unsubscribe: null as any,
+  searchDebounceTimer: null as any
 })

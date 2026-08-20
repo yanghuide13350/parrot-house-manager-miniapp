@@ -1,7 +1,7 @@
 <view wx:if="{{!hidden}}" class="tab-wrap">
   <view class="tab-bar">
     <view wx:for="{{tabs}}" wx:key="pagePath" data-path="{{item.pagePath}}" bindtap="switchTab" class="tab {{selected === index ? 'active' : ''}}">
-      <view class="mark"><image class="mark-image" src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" /></view>
+      <view class="mark"><image wx:if="{{item.icon === 'stat-hatching'}}" class="mark-image hatching-mark-image" src="/assets/icons/stat-hatching-reference.png" mode="aspectFit" /><image wx:else class="mark-image" src="/assets/icons/{{item.icon}}.svg" mode="aspectFit" /></view>
       <view class="tab-label">{{item.label}}</view>
     </view>
   </view>

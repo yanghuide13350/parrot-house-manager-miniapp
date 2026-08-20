@@ -1,4 +1,4 @@
-.access-header { display: flex; align-items: center; gap: 24rpx; padding-bottom: 36rpx; }
+.access-header { display: flex; align-items: center; gap: 24rpx; padding-bottom: 48rpx; }
 .access-title { flex: 1; min-width: 0; }
 .policy-switch { transform: scale(.88); transform-origin: right center; }
 .access-hero { display: flex; align-items: stretch; justify-content: space-between; padding: 42rpx; border-radius: 40rpx; background: #1e293b; color: #fff; }

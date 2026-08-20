@@ -5,8 +5,15 @@ Page({
   data: { parrots: [] as ParrotDoc[], search: '', filter: '', filterLabel: '', clutchId: '', clutchLabel: '', gender: '', status: '', minPrice: '', maxPrice: '', drawer: false, longPressed: null as any, genders: Object.keys(GENDER_LABEL).map(key => ({ key, label: GENDER_LABEL[key as GenderCode] })), statuses: Object.keys(STATUS_LABEL).map(key => ({ key, label: STATUS_LABEL[key as ParrotStatusCode] })) },
   onLoad() { this.unsubscribe = store.subscribe(() => this.refresh()); store.hydrate(); this.refresh() },
   onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ selected: 1, hidden: false }); const filter = this.consumeFilterIntent(); if (filter !== null) this.resetFilterState(filter); else this.refresh() },
-  onUnload() { if (this.unsubscribe) this.unsubscribe() },
+  onUnload() { if (this.unsubscribe) this.unsubscribe(); this.cancelSearchRefresh() },
   async onPullDownRefresh() { await store.hydrate(true); wx.stopPullDownRefresh() },
+  async refreshFromTab() {
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 })
+    await store.hydrate(true)
+    this.refresh()
+    if (store.lastError) wx.showToast({ title: store.lastError, icon: 'none' })
+    else wx.showToast({ title: '已刷新', icon: 'none' })
+  },
   refresh() {
     const query = String(this.data.search || '').trim().toLowerCase(); const { gender, status, minPrice, maxPrice, filter, clutchId, clutchLabel } = this.data
     const activeStatus = (status || filter) as ParrotStatusCode
@@ -16,7 +23,9 @@ Page({
     })
     this.setData({ parrots, filterLabel: clutchLabel || (activeStatus ? STATUS_LABEL[activeStatus] || '' : '') })
   },
-  inputSearch(event: any) { this.setData({ search: event.detail.value }, () => this.refresh()) },
+  inputSearch(event: any) { this.setData({ search: event.detail.value }); this.scheduleSearchRefresh() },
+  scheduleSearchRefresh() { this.cancelSearchRefresh(); this.searchDebounceTimer = setTimeout(() => { this.searchDebounceTimer = null; this.refresh() }, 300) },
+  cancelSearchRefresh() { if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer); this.searchDebounceTimer = null },
   setTabHidden(hidden: boolean) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ hidden }) },
   openDrawer() { this.setTabHidden(true); this.setData({ drawer: true }) }, closeDrawer() { this.setData({ drawer: false }); this.setTabHidden(false) },
   chooseGender(event: any) { this.setData({ gender: this.data.gender === event.currentTarget.dataset.key ? '' : event.currentTarget.dataset.key }) },
@@ -33,5 +42,5 @@ Page({
   cancelLongPress() { if (this.longPressTimer) clearTimeout(this.longPressTimer); this.longPressTimer = null },
   closeLongPress() { this.setData({ longPressed: null }); this.setTabHidden(false) }, shareLongPress() { this.setData({ longPressed: null }); this.setTabHidden(false); wx.showToast({ title: '请在详情页生成分享', icon: 'none' }) },
   noop() {},
-  unsubscribe: null, longPressTimer: null
+  unsubscribe: null, longPressTimer: null, searchDebounceTimer: null as any
 })

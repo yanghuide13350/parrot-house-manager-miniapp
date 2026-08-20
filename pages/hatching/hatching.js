@@ -12,10 +12,22 @@ Page({
     else
         this.refresh(); },
     onUnload() { if (this.unsubscribe)
-        this.unsubscribe(); },
+        this.unsubscribe(); this.cancelSearchRefresh(); },
     refresh() { var _a; const query = String(this.data.search || '').toLowerCase(); const coverImage = (parrot) => { const media = ((parrot === null || parrot === void 0 ? void 0 : parrot.media) || []).find((item) => item.type === 'image' && item.url); return (media === null || media === void 0 ? void 0 : media.thumbnailUrl) || (media === null || media === void 0 ? void 0 : media.url) || (parrot === null || parrot === void 0 ? void 0 : parrot.image) || types_1.PLACEHOLDER_IMAGE; }; const records = store_1.store.hatchingRecords.filter(item => !query || `${item.maleSpecies} ${item.femaleSpecies} ${item.maleRingNumber} ${item.femaleRingNumber} ${item.species}`.toLowerCase().includes(query)).map(item => { const male = store_1.store.getParrot(item.maleId), female = store_1.store.getParrot(item.femaleId); return { ...item, maleName: item.maleSpecies || '未命名公鸟', femaleName: item.femaleSpecies || '未命名母鸟', maleRingLabel: item.maleRingNumber || '需补充', femaleRingLabel: item.femaleRingNumber || '需补充', maleDetailId: (male === null || male === void 0 ? void 0 : male.id) || '', femaleDetailId: (female === null || female === void 0 ? void 0 : female.id) || '', maleImage: coverImage(male), femaleImage: coverImage(female) }; }); const breeders = store_1.store.parrots.filter(item => item.status === types_1.ParrotStatusCode.BREEDER); const role = (_a = store_1.store.session) === null || _a === void 0 ? void 0 : _a.role; this.setData({ records, breeders, maleBreeders: breeders.filter(item => item.gender === types_1.GenderCode.MALE), femaleBreeders: breeders.filter(item => item.gender === types_1.GenderCode.FEMALE), canRemoveCompleted: role === 'OWNER' || role === 'ADMIN' }); },
-    inputSearch(event) { this.setData({ search: event.detail.value }, () => this.refresh()); },
-    clearSearch() { this.setData({ search: '' }, () => this.refresh()); },
+    inputSearch(event) { this.setData({ search: event.detail.value }); this.scheduleSearchRefresh(); },
+    scheduleSearchRefresh() { this.cancelSearchRefresh(); this.searchDebounceTimer = setTimeout(() => { this.searchDebounceTimer = null; this.refresh(); }, 300); },
+    cancelSearchRefresh() { if (this.searchDebounceTimer)
+        clearTimeout(this.searchDebounceTimer); this.searchDebounceTimer = null; },
+    clearSearch() { this.cancelSearchRefresh(); this.setData({ search: '' }, () => this.refresh()); },
+    async refreshFromTab() {
+        wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+        await store_1.store.hydrate(true);
+        this.refresh();
+        if (store_1.store.lastError)
+            wx.showToast({ title: store_1.store.lastError, icon: 'none' });
+        else
+            wx.showToast({ title: '已刷新', icon: 'none' });
+    },
     consumeSearchIntent() { const intent = wx.getStorageSync('parrot-pro-hatching-search-intent'); if (!intent || typeof intent !== 'object' || typeof intent.timestamp !== 'number' || Date.now() - intent.timestamp > 60000)
         return null; wx.removeStorageSync('parrot-pro-hatching-search-intent'); return String(intent.ring || ''); },
     setTabHidden(hidden) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar)
@@ -119,5 +131,6 @@ Page({
             this.setData({ submitting: false });
         } } }); },
     noop() { },
-    unsubscribe: null
+    unsubscribe: null,
+    searchDebounceTimer: null
 });

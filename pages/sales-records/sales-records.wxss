@@ -1,4 +1,4 @@
-.sales-header { display: flex; align-items: center; gap: 24rpx; padding-bottom: 36rpx; }
+.sales-header { display: flex; align-items: center; gap: 24rpx; padding-bottom: 48rpx; }
 .sales-overview { display: flex; align-items: stretch; justify-content: space-between; padding: 42rpx; border-radius: 40rpx; background: #1e293b; color: #fff; }
 .overview-main { display: flex; flex-direction: column; justify-content: center; }
 .overview-label { color: rgba(255,255,255,.55); font-size: 20rpx; font-weight: 800; letter-spacing: 2rpx; }

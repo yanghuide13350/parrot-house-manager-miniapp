@@ -1,4 +1,4 @@
-.form-head { display: flex; align-items: center; gap: 24rpx; padding-bottom: 44rpx; }
+.form-head { display: flex; align-items: center; gap: 24rpx; padding-bottom: 48rpx; }
 .back-button { width: 88rpx; height: 88rpx; line-height: 82rpx; padding: 0; border-radius: 28rpx; background: #fff; border: 1rpx solid #e2e8f0; color: #0f172a; font-size: 48rpx; }
 .media-card, .form-card { padding: 40rpx; margin-bottom: 28rpx; }
 .section-label { color: #0f172a; font-size: 20rpx; font-weight: 900; letter-spacing: 2rpx; }

@@ -7,6 +7,13 @@ Page({
   onReady() { this.canvasReady = true; this.drawTrend() },
   onUnload() { if (this.unsubscribe) this.unsubscribe() },
   async onPullDownRefresh() { this.setData({ pullRefreshing: true }); await store.hydrate(true); this.setData({ pullRefreshing: false }); wx.stopPullDownRefresh() },
+  async refreshFromTab() {
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 })
+    await store.hydrate(true)
+    this.refresh()
+    if (store.lastError) wx.showToast({ title: store.lastError, icon: 'none' })
+    else wx.showToast({ title: '已刷新', icon: 'none' })
+  },
   refresh() {
     const dashboard = store.dashboard
     const stats = { ...dashboard.stats, revenue: Number(dashboard.stats.revenueCents || 0) / 100 }

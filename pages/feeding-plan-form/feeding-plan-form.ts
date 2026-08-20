@@ -4,6 +4,7 @@ import { store } from '../../utils/store'
 
 const emptyForm = () => ({ name: '', species: '', stage: '无毛雏鸟', ageFromMonths: '0', ageFromDays: '0', ageToMonths: '1', ageToDays: '0', feedingType: 'FORMULA', formulaName: '', waterMl: '', powderScoops: '', temperatureMin: '38', temperatureMax: '40', feedingsPerDay: '', amountMl: '', feedingMethod: '针管', temperatureCheck: '', preparationNotes: '', seedFoodName: '', seedFoodAmount: '', seedFoodNotes: '', feedingNotes: '', fullnessNotes: '', warningNotes: '' })
 const numberKeys = new Set(['ageFromMonths', 'ageFromDays', 'ageToMonths', 'ageToDays', 'waterMl', 'temperatureMin', 'temperatureMax', 'feedingsPerDay'])
+const ageDayKeys = new Set(['ageFromDays', 'ageToDays'])
 
 Page({
   data: { form: emptyForm(), plan: null as any, isEdit: false, submitting: false, step: 1, breedOptions: [] as string[] },
@@ -18,7 +19,7 @@ Page({
   },
   onShow() { this.refreshBreedOptions() },
   goBack() { if (!this.data.submitting) backOrSwitchTab('/pages/feeding-plans/feeding-plans') },
-  input(event: any) { const key = event.currentTarget.dataset.key, value = event.detail.value; this.setData({ [`form.${key}`]: value }); if (key === 'species') this.refreshBreedOptions(value) },
+  input(event: any) { const key = event.currentTarget.dataset.key; let value = event.detail.value; if (ageDayKeys.has(key) && value !== '') value = String(Math.min(30, Math.max(0, Number(value) || 0))); this.setData({ [`form.${key}`]: value }); if (key === 'species') this.refreshBreedOptions(value) },
   refreshBreedOptions(keyword = this.data.form.species) { const normalized = String(keyword || '').trim().toLowerCase(), breedOptions = [...new Set(store.parrots.map(item => String(item.breed || '').trim()).filter(Boolean))].filter(item => !normalized || item.toLowerCase().includes(normalized)).slice(0, 8); this.setData({ breedOptions }) },
   focusBreed() { this.refreshBreedOptions() },
   chooseBreed(event: any) { this.setData({ 'form.species': event.currentTarget.dataset.value, breedOptions: [] }) },

@@ -8,6 +8,9 @@
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28rpx; margin-top: 32rpx; }
 .stat { position: relative; height: 224rpx; border-radius: 44rpx; padding: 42rpx 36rpx; color: #fff; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 12rpx 26rpx rgba(30,41,59,.16); text-shadow: 0 2rpx 4rpx rgba(15,23,42,.18); }
 .stat-icon { position: absolute; top: 28rpx; right: 28rpx; display: flex; align-items: center; justify-content: center; width: 52rpx; height: 52rpx; opacity: .74; filter: brightness(0) invert(1); pointer-events: none; text-shadow: none; }
+.stat-illustration { top: 24rpx; right: 20rpx; width: 88rpx; height: 88rpx; opacity: 1; filter: none; }
+.stat-illustration-vector { filter: brightness(0) invert(1); opacity: .92; }
+.stat-illustration-image { display: block; width: 100%; height: 100%; }
 .stat-num { color: #fff; font-size: 56rpx; font-weight: 900; line-height: 1; }
 .stat-label { margin-top: 14rpx; color: #fff; font-size: 22rpx; font-weight: 900; }
 .stat-blue { background: #60778b; }.stat-green { background: #899a7f; }.stat-pink { background: #d69da1; }.stat-beige { background: #bda170; }.stat-slate { background: #8794a0; }.stat-purple { background: #9e91ae; }

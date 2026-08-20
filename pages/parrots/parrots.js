@@ -11,8 +11,17 @@ Page({
     else
         this.refresh(); },
     onUnload() { if (this.unsubscribe)
-        this.unsubscribe(); },
+        this.unsubscribe(); this.cancelSearchRefresh(); },
     async onPullDownRefresh() { await store_1.store.hydrate(true); wx.stopPullDownRefresh(); },
+    async refreshFromTab() {
+        wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+        await store_1.store.hydrate(true);
+        this.refresh();
+        if (store_1.store.lastError)
+            wx.showToast({ title: store_1.store.lastError, icon: 'none' });
+        else
+            wx.showToast({ title: '已刷新', icon: 'none' });
+    },
     refresh() {
         const query = String(this.data.search || '').trim().toLowerCase();
         const { gender, status, minPrice, maxPrice, filter, clutchId, clutchLabel } = this.data;
@@ -23,7 +32,10 @@ Page({
         });
         this.setData({ parrots, filterLabel: clutchLabel || (activeStatus ? types_1.STATUS_LABEL[activeStatus] || '' : '') });
     },
-    inputSearch(event) { this.setData({ search: event.detail.value }, () => this.refresh()); },
+    inputSearch(event) { this.setData({ search: event.detail.value }); this.scheduleSearchRefresh(); },
+    scheduleSearchRefresh() { this.cancelSearchRefresh(); this.searchDebounceTimer = setTimeout(() => { this.searchDebounceTimer = null; this.refresh(); }, 300); },
+    cancelSearchRefresh() { if (this.searchDebounceTimer)
+        clearTimeout(this.searchDebounceTimer); this.searchDebounceTimer = null; },
     setTabHidden(hidden) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar)
         tabBar.setData({ hidden }); },
     openDrawer() { this.setTabHidden(true); this.setData({ drawer: true }); }, closeDrawer() { this.setData({ drawer: false }); this.setTabHidden(false); },
@@ -43,5 +55,5 @@ Page({
         clearTimeout(this.longPressTimer); this.longPressTimer = null; },
     closeLongPress() { this.setData({ longPressed: null }); this.setTabHidden(false); }, shareLongPress() { this.setData({ longPressed: null }); this.setTabHidden(false); wx.showToast({ title: '请在详情页生成分享', icon: 'none' }); },
     noop() { },
-    unsubscribe: null, longPressTimer: null
+    unsubscribe: null, longPressTimer: null, searchDebounceTimer: null
 });

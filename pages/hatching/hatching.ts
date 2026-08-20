@@ -6,10 +6,19 @@ Page({
   data: { records: [] as any[], search: '', showAdd: false, showUpdate: false, updateRecord: null as any, updateValue: 0, offspringText: '', submitting: false, canRemoveCompleted: false, newRecord: { species: '', maleId: '', femaleId: '', startDate: todayDate(), eggs: '3' }, breeders: [] as any[], maleBreeders: [] as any[], femaleBreeders: [] as any[] },
   onLoad(options: any) { this.unsubscribe = store.subscribe(() => this.refresh()); store.hydrate(); this.setData({ search: options.ring || '' }); this.refresh() },
   onShow() { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ selected: 3, hidden: false }); const ring = this.consumeSearchIntent(); if (ring !== null) this.setData({ search: ring }, () => this.refresh()); else this.refresh() },
-  onUnload() { if (this.unsubscribe) this.unsubscribe() },
+  onUnload() { if (this.unsubscribe) this.unsubscribe(); this.cancelSearchRefresh() },
   refresh() { const query = String(this.data.search || '').toLowerCase(); const coverImage = (parrot: any) => { const media = (parrot?.media || []).find((item: any) => item.type === 'image' && item.url); return media?.thumbnailUrl || media?.url || parrot?.image || PLACEHOLDER_IMAGE }; const records = store.hatchingRecords.filter(item => !query || `${item.maleSpecies} ${item.femaleSpecies} ${item.maleRingNumber} ${item.femaleRingNumber} ${item.species}`.toLowerCase().includes(query)).map(item => { const male = store.getParrot(item.maleId), female = store.getParrot(item.femaleId); return { ...item, maleName: item.maleSpecies || '未命名公鸟', femaleName: item.femaleSpecies || '未命名母鸟', maleRingLabel: item.maleRingNumber || '需补充', femaleRingLabel: item.femaleRingNumber || '需补充', maleDetailId: male?.id || '', femaleDetailId: female?.id || '', maleImage: coverImage(male), femaleImage: coverImage(female) } }); const breeders = store.parrots.filter(item => item.status === ParrotStatusCode.BREEDER); const role = store.session?.role; this.setData({ records, breeders, maleBreeders: breeders.filter(item => item.gender === GenderCode.MALE), femaleBreeders: breeders.filter(item => item.gender === GenderCode.FEMALE), canRemoveCompleted: role === 'OWNER' || role === 'ADMIN' }) },
-  inputSearch(event: any) { this.setData({ search: event.detail.value }, () => this.refresh()) },
-  clearSearch() { this.setData({ search: '' }, () => this.refresh()) },
+  inputSearch(event: any) { this.setData({ search: event.detail.value }); this.scheduleSearchRefresh() },
+  scheduleSearchRefresh() { this.cancelSearchRefresh(); this.searchDebounceTimer = setTimeout(() => { this.searchDebounceTimer = null; this.refresh() }, 300) },
+  cancelSearchRefresh() { if (this.searchDebounceTimer) clearTimeout(this.searchDebounceTimer); this.searchDebounceTimer = null },
+  clearSearch() { this.cancelSearchRefresh(); this.setData({ search: '' }, () => this.refresh()) },
+  async refreshFromTab() {
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 })
+    await store.hydrate(true)
+    this.refresh()
+    if (store.lastError) wx.showToast({ title: store.lastError, icon: 'none' })
+    else wx.showToast({ title: '已刷新', icon: 'none' })
+  },
   consumeSearchIntent() { const intent = wx.getStorageSync('parrot-pro-hatching-search-intent'); if (!intent || typeof intent !== 'object' || typeof intent.timestamp !== 'number' || Date.now() - intent.timestamp > 60000) return null; wx.removeStorageSync('parrot-pro-hatching-search-intent'); return String(intent.ring || '') },
   setTabHidden(hidden: boolean) { const tabBar = typeof this.getTabBar === 'function' ? this.getTabBar() : null; if (tabBar) tabBar.setData({ hidden }) },
   openAdd() { this.setTabHidden(true); this.setData({ showAdd: true, newRecord: { species: '', maleId: '', femaleId: '', startDate: todayDate(), eggs: '3' } }) },
@@ -42,5 +51,6 @@ Page({
   viewParrot(event: any) { const id = String(event.currentTarget.dataset.id || ''); if (!id || !store.getParrot(id)) return; wx.navigateTo({ url: `/pages/parrot-detail/parrot-detail?id=${encodeURIComponent(id)}` }) },
   remove(event: any) { if (this.data.submitting || !this.data.canRemoveCompleted) return; const id = event.currentTarget.dataset.id; wx.showModal({ title: '确认移除', content: '此操作会删除该窝的孵化记录，并从父母鸟详情中同步移除。', confirmColor: '#b42318', success: async (result: any) => { if (!result.confirm || this.data.submitting) return; this.setData({ submitting: true }); try { await store.deleteHatching(id); wx.showToast({ title: '记录已移除', icon: 'none' }) } catch (error: any) { wx.showToast({ title: error.message || '删除失败', icon: 'none' }) } finally { this.setData({ submitting: false }) } } }) },
   noop() {},
-  unsubscribe: null as any
+  unsubscribe: null as any,
+  searchDebounceTimer: null as any
 })

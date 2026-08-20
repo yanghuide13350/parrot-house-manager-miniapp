@@ -10,6 +10,15 @@ Page({
     onUnload() { if (this.unsubscribe)
         this.unsubscribe(); },
     async onPullDownRefresh() { this.setData({ pullRefreshing: true }); await store_1.store.hydrate(true); this.setData({ pullRefreshing: false }); wx.stopPullDownRefresh(); },
+    async refreshFromTab() {
+        wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+        await store_1.store.hydrate(true);
+        this.refresh();
+        if (store_1.store.lastError)
+            wx.showToast({ title: store_1.store.lastError, icon: 'none' });
+        else
+            wx.showToast({ title: '已刷新', icon: 'none' });
+    },
     refresh() {
         const dashboard = store_1.store.dashboard;
         const stats = { ...dashboard.stats, revenue: Number(dashboard.stats.revenueCents || 0) / 100 };
