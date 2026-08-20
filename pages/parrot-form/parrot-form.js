@@ -51,19 +51,31 @@ Page({
     focusParentField(event) { this.setData({ focusedParentField: event.currentTarget.dataset.focus }); },
     blurParentField() { this.setData({ focusedParentField: '' }); },
     clearParent(event) { this.setData({ [event.currentTarget.dataset.role]: null }); },
-    async chooseImage(event) {
+    async chooseMedia(event) {
         if (this.data.uploading)
             return;
         const kind = event.currentTarget.dataset.kind;
         try {
-            const result = await wx.chooseImage({ count: kind === 'local' ? 9 : 1, sizeType: ['compressed'], sourceType: kind === 'local' ? ['album'] : ['camera'] });
-            this.setData({ uploading: true });
-            const media = [];
-            for (const filePath of result.tempFilePaths || []) {
-                const asset = await (0, cloud_1.uploadMedia)(filePath);
-                media.push({ assetId: asset.assetId, type: 'image', fileID: asset.fileID, url: asset.fileID });
+            const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] });
+            const selected = (result.tempFiles || []).map((item, index) => ({ filePath: item.tempFilePath, type: item.fileType === 'video' ? 'video' : 'image', placeholderId: `uploading-${Date.now()}-${index}` }));
+            if (!selected.length)
+                return;
+            const placeholders = selected.map(item => ({ assetId: item.placeholderId, type: item.type, url: '', uploading: true }));
+            this.setData({ media: this.data.media.concat(placeholders), uploading: true });
+            let failed = 0;
+            for (const item of selected) {
+                try {
+                    const asset = await (0, cloud_1.uploadMedia)(item.filePath, item.type);
+                    const media = this.data.media.map((current) => current.assetId === item.placeholderId ? { assetId: asset.assetId, type: item.type, fileID: asset.fileID, url: asset.fileID } : current);
+                    this.setData({ media });
+                }
+                catch (_a) {
+                    failed += 1;
+                    this.setData({ media: this.data.media.filter((current) => current.assetId !== item.placeholderId) });
+                }
             }
-            this.setData({ media: this.data.media.concat(media) });
+            if (failed)
+                wx.showToast({ title: failed === selected.length ? '媒体上传失败' : `${failed} 个媒体上传失败`, icon: 'none' });
         }
         catch (error) {
             if (error && error.errMsg && error.errMsg.includes('cancel'))
@@ -79,8 +91,12 @@ Page({
         const item = this.data.media[Number(event.currentTarget.dataset.index)];
         if (!item || !item.url)
             return;
-        const urls = this.data.media.filter((media) => media.url).map((media) => media.url);
-        wx.previewImage({ current: item.url, urls });
+        if (item.type === 'image') {
+            const urls = this.data.media.filter((media) => media.type === 'image' && media.url).map((media) => media.url);
+            wx.previewImage({ current: item.url, urls });
+            return;
+        }
+        wx.previewMedia({ current: 0, sources: [{ url: item.url, type: 'video', poster: item.poster || '' }] });
     },
     async save() {
         const form = this.data.form;

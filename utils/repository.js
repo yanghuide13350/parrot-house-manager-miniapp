@@ -18,7 +18,7 @@ function loadSession() {
     return sessionLoading;
 }
 function mapMedia(items) {
-    return (items || []).filter(item => (item === null || item === void 0 ? void 0 : item.type) === 'image' && (item === null || item === void 0 ? void 0 : item.fileID)).map(item => ({ assetId: item.assetId, type: 'image', fileID: item.fileID, url: item.fileID, thumbnailFileID: item.thumbnailFileID || '', thumbnailUrl: item.thumbnailFileID || '', posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }));
+    return (items || []).filter(item => ((item === null || item === void 0 ? void 0 : item.type) === 'image' || (item === null || item === void 0 ? void 0 : item.type) === 'video') && (item === null || item === void 0 ? void 0 : item.fileID)).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID, url: item.fileID, thumbnailFileID: item.thumbnailFileID || '', thumbnailUrl: item.thumbnailFileID || '', posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }));
 }
 function coverMedia(media) {
     const image = media.find(item => item.type === 'image' && item.url);

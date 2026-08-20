@@ -9,8 +9,14 @@
 .media-icon.green { color: #166534; background: #dcfce7; }
 .media-icon.dashed { color: #94a3b8; background: #f8fafc; border: 2rpx dashed #cbd5e1; }
 .media-action text { display: block; margin-top: 12rpx; }
-.media-preview { position: relative; height: 150rpx; margin-top: 20rpx; overflow: hidden; border-radius: 22rpx; background: #f1f5f9; }
-.media-preview image { width: 100%; height: 100%; }
+.media-preview { position: relative; height: 0; padding-top: 100%; overflow: hidden; border-radius: 22rpx; background: #f1f5f9; }
+.media-preview image, .video-preview, .upload-placeholder { position: absolute; inset: 0; width: 100%; height: 100%; }
+.video-thumb { width: 100%; height: 100%; }
+.media-uploading { background: #f8fafc; border: 1rpx dashed #94a3b8; }
+.upload-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #475569; font-size: 20rpx; font-weight: 800; }
+.upload-spinner { width: 38rpx; height: 38rpx; margin-bottom: 12rpx; border: 4rpx solid #d7e0ea; border-top-color: #42614c; border-radius: 50%; animation: media-upload-spin .8s linear infinite; }
+.upload-tip { margin-top: 6rpx; color: #94a3b8; font-size: 17rpx; font-weight: 700; }
+@keyframes media-upload-spin { to { transform: rotate(360deg); } }
 .remove-media { position: absolute; top: 8rpx; right: 8rpx; z-index: 2; display: flex; align-items: center; justify-content: center; width: 44rpx; height: 44rpx; border-radius: 50%; background: #be123c; color: #fff; font-size: 28rpx; font-weight: 700; line-height: 1; }
 .url-actions button { flex: 1; height: 76rpx; line-height: 76rpx; font-size: 22rpx; }
 .field-label { display: block; margin: 30rpx 0 14rpx; color: #0f172a; font-size: 21rpx; font-weight: 900; letter-spacing: 1rpx; }

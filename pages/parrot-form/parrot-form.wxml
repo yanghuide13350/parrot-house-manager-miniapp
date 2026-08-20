@@ -4,9 +4,9 @@
     <view class="card media-card">
       <view class="section-label">多媒体资产 · MEDIA</view>
       <view class="media-actions">
-        <view class="media-action tap" data-kind="camera" bindtap="chooseImage"><view class="media-icon gray">+</view><text>拍照</text></view>
-        <view class="media-action tap" data-kind="local" bindtap="chooseImage"><view class="media-icon dashed">+</view><text>本地</text></view>
-        <view wx:for="{{media}}" wx:key="assetId" class="media-preview tap" data-index="{{index}}" bindtap="previewMedia"><image src="{{item.url}}" mode="aspectFill" lazy-load="true"/><view class="remove-media tap" data-index="{{index}}" catchtap="removeMedia">×</view></view>
+        <view class="media-action tap" data-kind="camera" bindtap="chooseMedia"><view class="media-icon gray">+</view><text>拍摄</text></view>
+        <view class="media-action tap" data-kind="local" bindtap="chooseMedia"><view class="media-icon dashed">+</view><text>本地媒体</text></view>
+        <view wx:for="{{media}}" wx:key="assetId" class="media-preview {{item.uploading ? 'media-uploading' : 'tap'}}" data-index="{{index}}" bindtap="previewMedia"><view wx:if="{{item.uploading}}" class="upload-placeholder"><view class="upload-spinner"></view><text>正在上传{{item.type === 'video' ? '视频' : '图片'}}</text><text class="upload-tip">请勿退出当前页面</text></view><block wx:else><image wx:if="{{item.type === 'image'}}" src="{{item.url}}" mode="aspectFill" lazy-load="true"/><view wx:else class="video-preview"><video class="video-thumb" src="{{item.url}}" object-fit="cover" controls="{{false}}" autoplay="{{false}}" muted="{{true}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" show-fullscreen-btn="{{false}}" direction="0" data-index="{{index}}" catchtap="previewMedia"/><view class="video-play" data-index="{{index}}" catchtap="previewMedia">▶</view></view><view class="remove-media tap" data-index="{{index}}" catchtap="removeMedia">×</view></block></view>
       </view>
     </view>
     <view class="card form-card">

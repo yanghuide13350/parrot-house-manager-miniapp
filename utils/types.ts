@@ -6,7 +6,7 @@ export enum GenderCode { MALE = 'MALE', FEMALE = 'FEMALE', UNKNOWN = 'UNKNOWN' }
 
 export interface MediaItem {
   assetId?: string
-  type: 'image'
+  type: 'image' | 'video'
   url: string
   fileID?: string
   thumbnailUrl?: string
@@ -14,6 +14,7 @@ export interface MediaItem {
   poster?: string
   posterFileID?: string
   name?: string
+  uploading?: boolean
 }
 
 export interface ParrotDoc {
@@ -32,7 +33,7 @@ export interface ParrotDoc {
   birthDate: string
   image: string
   media: MediaItem[]
-  coverType?: 'image' | 'placeholder'
+  coverType?: 'image' | 'video' | 'placeholder'
   publicIntro: string
   privateNotes: string
   feedingPlanId?: string

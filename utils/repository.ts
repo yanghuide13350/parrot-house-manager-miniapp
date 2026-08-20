@@ -27,7 +27,7 @@ function loadSession() {
 }
 
 function mapMedia(items: any[]): MediaItem[] {
-  return (items || []).filter(item => item?.type === 'image' && item?.fileID).map(item => ({ assetId: item.assetId, type: 'image', fileID: item.fileID, url: item.fileID, thumbnailFileID: item.thumbnailFileID || '', thumbnailUrl: item.thumbnailFileID || '', posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }))
+  return (items || []).filter(item => (item?.type === 'image' || item?.type === 'video') && item?.fileID).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID, url: item.fileID, thumbnailFileID: item.thumbnailFileID || '', thumbnailUrl: item.thumbnailFileID || '', posterFileID: item.posterFileID || '', poster: item.posterFileID || '' }))
 }
 
 function coverMedia(media: MediaItem[]) {
