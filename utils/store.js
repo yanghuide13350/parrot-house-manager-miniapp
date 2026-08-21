@@ -65,6 +65,7 @@ class Store {
     getParrot(id) { return this.parrots.find(item => item.id === id); }
     getPair(id) { return id ? this.pairs.find(item => item.id === id) : undefined; }
     async createParrot(input) { const result = await repository_1.repository.createParrot(input); await this.hydrate(true); return result; }
+    async createIntroduction(input) { const result = await repository_1.repository.createIntroduction(input); await this.hydrate(true); return result; }
     async updateParrot(id, updates) { const item = this.getParrot(id); if (!item)
         throw new Error('找不到鹦鹉档案'); const result = await repository_1.repository.updateParrot(id, item.revision, updates); await this.hydrate(true); return result; }
     async deleteParrot(id) { const item = this.getParrot(id); if (!item)
@@ -73,6 +74,8 @@ class Store {
         throw new Error('找不到鹦鹉档案'); await repository_1.repository.setBreeder(id, item.revision); await this.hydrate(true); }
     async unsetBreeder(id) { const item = this.getParrot(id); if (!item)
         throw new Error('找不到鹦鹉档案'); await repository_1.repository.unsetBreeder(id, item.revision); await this.hydrate(true); }
+    async markIntroductionForSale(id) { const item = this.getParrot(id); if (!item)
+        throw new Error('找不到引种鸟'); await repository_1.repository.markIntroductionForSale(id, item.revision); await this.hydrate(true); }
     async setFeedingPlan(id, feedingPlanId) { const item = this.getParrot(id); if (!item)
         throw new Error('找不到鹦鹉档案'); await repository_1.repository.setParrotFeedingPlan(id, item.revision, feedingPlanId); await this.hydrate(true); }
     async pairParrots(maleId, femaleId) { const male = this.getParrot(maleId); const female = this.getParrot(femaleId); if (!male || !female)

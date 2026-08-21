@@ -14,10 +14,12 @@
 .stat-num { color: #fff; font-size: 56rpx; font-weight: 900; line-height: 1; }
 .stat-label { margin-top: 14rpx; color: #fff; font-size: 22rpx; font-weight: 900; }
 .stat-blue { background: #60778b; }.stat-green { background: #899a7f; }.stat-pink { background: #d69da1; }.stat-beige { background: #bda170; }.stat-slate { background: #8794a0; }.stat-purple { background: #9e91ae; }
+.quick-section { margin-top: 36rpx; }.quick-heading { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4rpx 18rpx; }.quick-heading text:first-child { color: #0f172a; font-size: 28rpx; font-weight: 900; }.quick-heading text:last-child { color: #94a3b8; font-size: 17rpx; font-weight: 900; letter-spacing: 2rpx; }.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20rpx; }.quick-card { min-height: 190rpx; padding: 28rpx; border: 1rpx solid #edf1f5; border-radius: 32rpx; background: #fff; box-shadow: 0 10rpx 24rpx rgba(30,41,59,.04); }.quick-icon { display: flex; align-items: center; justify-content: center; width: 72rpx; height: 72rpx; border-radius: 24rpx; background: #f1f5f9; }.quick-name { margin-top: 20rpx; color: #0f172a; font-size: 25rpx; font-weight: 900; }.quick-card text { display: block; margin-top: 7rpx; color: #94a3b8; font-size: 16rpx; font-weight: 900; letter-spacing: 1.5rpx; }
 .sales-entry { display: flex; align-items: center; padding: 36rpx; margin-top: 32rpx; }
 .sales-icon { width: 96rpx; height: 96rpx; line-height: 96rpx; text-align: center; border-radius: 32rpx; background: #f1f5f9; color: #475569; font-size: 36rpx; font-weight: 900; }
-.access-entry { margin-top: 22rpx; }
-.feeding-entry { margin-top: 22rpx; }.feeding-icon, .access-icon { display:flex; align-items:center; justify-content:center; background:#f1f5f9; color:#475569; }
+.sales-entry-next, .access-entry { margin-top: 26rpx; }
+.introduction-icon { display:flex; align-items:center; justify-content:center; background:#f1f5f9; }
+.feeding-entry, .supplies-entry { margin-top: 22rpx; }.feeding-icon, .access-icon, .supplies-icon { display:flex; align-items:center; justify-content:center; background:#f1f5f9; color:#475569; }
 .sales-copy { flex: 1; margin-left: 28rpx; color: #0f172a; font-size: 30rpx; font-weight: 900; }.sales-copy text { display: block; margin-top: 6rpx; color: #94a3b8; font-size: 18rpx; letter-spacing: 2rpx; }.chevron { color: #cbd5e1; font-size: 52rpx; }
 .section { margin-top: 32rpx; }.bottom-section { padding-bottom: 32rpx; }
 .chart-card, .distribution { position: relative; z-index: 0; padding: 42rpx; }.seg { display: flex; background: #f1f5f9; padding: 6rpx; border-radius: 16rpx; }.seg-item { padding: 12rpx 18rpx; color: #94a3b8; border-radius: 12rpx; font-size: 18rpx; font-weight: 900; }.seg-item.selected { color: #0f172a; background: #fff; box-shadow: 0 4rpx 10rpx rgba(30,41,59,.08); }

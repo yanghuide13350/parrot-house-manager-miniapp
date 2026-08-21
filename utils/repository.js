@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.repository = void 0;
 const cloud_1 = require("./cloud");
 const types_1 = require("./types");
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 5;
 let session = null;
 let sessionLoading = null;
 const emptyDashboard = () => ({ stats: { total: 0, forSale: 0, sold: 0, returned: 0, breeder: 0, paired: 0, incubating: 0, revenueCents: 0, salesTotal: 0, returnRate: 0 }, species: [], trend: [] });
@@ -36,6 +36,9 @@ function mapParrot(item) {
         ringNumber: item.ringNumber,
         gender: item.gender,
         status: item.status,
+        recordSource: item.recordSource || 'PROFILE',
+        purchaseDate: item.purchaseDate || '',
+        introductionStage: item.introductionStage || '',
         price: Number(item.priceCents || 0) / 100,
         priceCents: Number(item.priceCents || 0),
         age: item.ageLabel || '未知',
@@ -123,6 +126,8 @@ exports.repository = {
     updateFeedingPlan(plan, input) { return (0, cloud_1.callManagement)('feedingPlans.update', { ...input, id: plan.id, revision: plan.revision }, (0, cloud_1.createRequestId)('feeding-plan-update')); },
     deleteFeedingPlan(plan) { return (0, cloud_1.callManagement)('feedingPlans.delete', { id: plan.id, revision: plan.revision }, (0, cloud_1.createRequestId)('feeding-plan-delete')); },
     setFeedingPlanEnabled(plan, enabled) { return (0, cloud_1.callManagement)('feedingPlans.setEnabled', { id: plan.id, revision: plan.revision, enabled }, (0, cloud_1.createRequestId)('feeding-plan-enabled')); },
+    supplies() { return (0, cloud_1.callManagement)('supplies.list'); },
+    createSupply(input) { return (0, cloud_1.callManagement)('supplies.create', { ...input, amountCents: Math.round(Number(input.amount || 0) * 100) }, (0, cloud_1.createRequestId)('supply-create')); },
     setParrotFeedingPlan(id, revision, feedingPlanId) { return (0, cloud_1.callManagement)('parrots.setFeedingPlan', { id, revision, feedingPlanId }, (0, cloud_1.createRequestId)('parrot-feeding-plan')); },
     requestAccess(note) { return (0, cloud_1.callManagement)('access.request', { note }, (0, cloud_1.createRequestId)('access-request')); },
     myAccessStatus() { return (0, cloud_1.callManagement)('access.myStatus'); },
@@ -133,6 +138,8 @@ exports.repository = {
     unsetAdmin(openId) { return (0, cloud_1.callManagement)('access.unsetAdmin', { openId }, (0, cloud_1.createRequestId)('access-unset-admin')); },
     setAccessPolicy(openAccess) { return (0, cloud_1.callManagement)('access.setPolicy', { openAccess }, (0, cloud_1.createRequestId)('access-policy')); },
     createParrot(input) { return (0, cloud_1.callManagement)('parrots.create', { breed: input.breed, species: input.species, ringNumber: input.ringNumber, gender: input.gender, birthDate: input.birthDate, priceCents: Math.round(Number(input.price || 0) * 100), publicIntro: input.publicIntro || '', privateNotes: input.privateNotes || input.desc || '', father: input.father, mother: input.mother, media: toApiMedia(input.media) }, (0, cloud_1.createRequestId)('parrot-create')); },
+    createIntroduction(input) { return (0, cloud_1.callManagement)('introductions.create', { breed: input.breed, species: input.species, ringNumber: input.ringNumber, gender: input.gender, birthDate: input.birthDate, purchaseDate: input.purchaseDate, priceCents: Math.round(Number(input.price || 0) * 100), publicIntro: input.publicIntro || '', privateNotes: input.privateNotes || input.desc || '', father: input.father, mother: input.mother, media: toApiMedia(input.media) }, (0, cloud_1.createRequestId)('introduction-create')); },
+    markIntroductionForSale(id, currentRevision) { return (0, cloud_1.callManagement)('introductions.markForSale', { id, revision: currentRevision }, (0, cloud_1.createRequestId)('introduction-for-sale')); },
     updateParrot(id, currentRevision, updates) { return (0, cloud_1.callManagement)('parrots.update', { id, revision: currentRevision, updates: cleanParrotUpdates(updates) }, (0, cloud_1.createRequestId)('parrot-update')); },
     deleteParrot(id, currentRevision) { return (0, cloud_1.callManagement)('parrots.delete', { id, revision: currentRevision }, (0, cloud_1.createRequestId)('parrot-delete')); },
     setBreeder(id, currentRevision) { return (0, cloud_1.callManagement)('parrots.setBreeder', { id, revision: currentRevision }, (0, cloud_1.createRequestId)('breeder-set')); },
@@ -153,7 +160,7 @@ exports.repository = {
 function toApiMedia(media = []) { return media.filter(item => item.assetId && (item.fileID || item.url)).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID || item.url, posterFileID: item.posterFileID || item.poster || '' })); }
 function cleanParrotUpdates(updates) {
     const allowed = {};
-    for (const key of ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother'])
+    for (const key of ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'purchaseDate', 'publicIntro', 'privateNotes', 'father', 'mother'])
         if (Object.prototype.hasOwnProperty.call(updates, key))
             allowed[key] = updates[key];
     if (Object.prototype.hasOwnProperty.call(updates, 'price'))

@@ -26,7 +26,7 @@ Page({
         const query = String(this.data.search || '').trim().toLowerCase();
         const { gender, status, minPrice, maxPrice, filter, clutchId, clutchLabel } = this.data;
         const activeStatus = (status || filter);
-        const parrots = store_1.store.parrots.filter(item => (!query || item.breed.toLowerCase().includes(query) || item.species.toLowerCase().includes(query) || item.ringNumber.toLowerCase().includes(query)) && (!gender || item.gender === gender) && (!activeStatus || item.status === activeStatus) && (!clutchId || item.birthHatchingRecordId === clutchId) && (!minPrice || item.price >= Number(minPrice)) && (!maxPrice || item.price <= Number(maxPrice))).map(item => {
+        const parrots = store_1.store.parrots.filter(item => (item.recordSource !== 'INTRODUCTION' || item.introductionStage === 'FOR_SALE') && (!query || item.breed.toLowerCase().includes(query) || item.species.toLowerCase().includes(query) || item.ringNumber.toLowerCase().includes(query)) && (!gender || item.gender === gender) && (!activeStatus || item.status === activeStatus) && (!clutchId || item.birthHatchingRecordId === clutchId) && (!minPrice || item.price >= Number(minPrice)) && (!maxPrice || item.price <= Number(maxPrice))).map(item => {
             const firstImage = (item.media || []).find(media => media.type === 'image' && media.url);
             return { ...item, image: (firstImage === null || firstImage === void 0 ? void 0 : firstImage.thumbnailUrl) || (firstImage === null || firstImage === void 0 ? void 0 : firstImage.url) || types_1.PLACEHOLDER_IMAGE, coverType: firstImage ? 'image' : 'placeholder', genderLabel: types_1.GENDER_LABEL[item.gender], ringLabel: item.ringNumber || '需补充' };
         });

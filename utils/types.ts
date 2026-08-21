@@ -23,6 +23,9 @@ export interface ParrotDoc {
   ringNumber: string
   gender: GenderCode
   status: ParrotStatusCode
+  recordSource?: 'PROFILE' | 'INTRODUCTION'
+  purchaseDate?: string
+  introductionStage?: 'GROWING' | 'FOR_SALE' | ''
   price: number
   priceCents: number
   age: string

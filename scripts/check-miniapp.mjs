@@ -8,7 +8,7 @@ const required = [
   'miniprogram/pages/home/home.wxml', 'miniprogram/pages/parrots/parrots.wxml', 'miniprogram/pages/feeding-plans/feeding-plans.wxml', 'miniprogram/pages/feeding-plan-form/feeding-plan-form.wxml', 'miniprogram/pages/feeding-plan-view/feeding-plan-view.wxml',
   'miniprogram/pages/breeding/breeding.wxml', 'miniprogram/pages/hatching/hatching.wxml',
   'miniprogram/pages/parrot-detail/parrot-detail.wxml', 'miniprogram/pages/parrot-form/parrot-form.wxml',
-  'miniprogram/pages/sales-records/sales-records.wxml', 'miniprogram/pages/access/access.wxml', 'miniprogram/pages/share/share.wxml',
+  'miniprogram/pages/sales-records/sales-records.wxml', 'miniprogram/pages/introductions/introductions.wxml', 'miniprogram/pages/supplies/supplies.wxml', 'miniprogram/pages/access/access.wxml', 'miniprogram/pages/share/share.wxml',
   'miniprogram/pages/clutch-intake/clutch-intake.wxml',
   'miniprogram/pages/unauthorized/unauthorized.wxml'
 ]
@@ -45,7 +45,7 @@ const validateWxml = file => {
   if (stack.length) throw new Error(`${file}: unclosed tag <${stack.at(-1)}>`)
 }
 required.filter(file => file.endsWith('.wxml')).forEach(validateWxml)
-const compiledPages = ['home', 'parrots', 'breeding', 'hatching', 'parrot-detail', 'parrot-form', 'clutch-intake', 'sales-records', 'access', 'feeding-plans', 'feeding-plan-form', 'feeding-plan-view', 'share', 'unauthorized']
+const compiledPages = ['home', 'parrots', 'breeding', 'hatching', 'parrot-detail', 'parrot-form', 'clutch-intake', 'sales-records', 'introductions', 'supplies', 'access', 'feeding-plans', 'feeding-plan-form', 'feeding-plan-view', 'share', 'unauthorized']
 for (const page of compiledPages) {
   const file = path.join(root, 'miniprogram', 'pages', page, `${page}.js`)
   if (!fs.existsSync(file) || !fs.readFileSync(file, 'utf8').includes('Page({')) throw new Error(`${page}.js is missing compiled page logic; run npm run build:miniapp`)
@@ -53,7 +53,7 @@ for (const page of compiledPages) {
 const config = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram', 'project.config.json'), 'utf8'))
 const app = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/app.json'), 'utf8'))
 if (config.compileType !== 'miniprogram') throw new Error('miniprogram/project.config.json must target miniprogram')
-if (app.pages.length !== 14 || !app.tabBar?.custom) throw new Error('app.json page or custom tab configuration is incomplete')
+if (app.pages.length !== 16 || !app.tabBar?.custom) throw new Error('app.json page or custom tab configuration is incomplete')
 const source = required.filter(file => file.endsWith('.ts') || file.endsWith('.wxml') || file.endsWith('.wxss')).map(file => fs.readFileSync(path.join(root, file), 'utf8')).join('\n')
 if (/https:\/\/esm\.sh|cdn\.tailwindcss\.com/.test(source)) throw new Error('Miniapp source must not depend on web CDN assets')
 if (/wx\.cloud|callFunction/.test(source)) throw new Error('Miniapp source must not depend on CloudBase')

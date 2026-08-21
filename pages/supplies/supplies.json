@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "app-icon": "/components/app-icon/app-icon",
+    "empty-state": "/components/empty-state/empty-state"
+  }
+}

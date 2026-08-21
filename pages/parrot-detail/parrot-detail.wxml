@@ -22,9 +22,10 @@
 
   <view class="page-pad detail-body">
     <view class="card identity-card">
-      <view class="between"><view><view class="profile-title">{{parrot.species}}</view><view class="profile-ring">{{parrot.breed ? '品种：' + parrot.breed + ' · ' : ''}}圈号：{{parrot.ringLabel}}</view></view><status-badge status="{{parrot.status}}"/></view>
+      <view class="between"><view><view class="profile-title">{{parrot.species}}</view><view class="profile-ring">{{parrot.breed ? '品种：' + parrot.breed + ' · ' : ''}}圈号：{{parrot.ringLabel}}</view></view><status-badge status="{{parrot.status}}" label-override="{{statusLabel}}"/></view>
       <view class="detail-grid"><view><text>性别</text><strong>{{genderLabel}}</strong></view><view><text>年龄</text><strong>{{parrot.age}}</strong></view><view><text>健康</text><strong>优秀</strong></view><view><text>估值</text><strong>¥{{parrot.price}}</strong></view></view>
       <view wx:if="{{parrot.privateNotes}}" class="observation"><view class="section-label">内部备注</view><text>{{parrot.privateNotes}}</text></view>
+      <view wx:if="{{parrot.isIntroduction}}" class="observation"><view class="section-label">引种信息</view><text>购买日期：{{parrot.purchaseDate}} · 购入金额：¥{{parrot.price}}</text></view>
     </view>
 
     <view class="card relations-card">
@@ -36,7 +37,8 @@
     <view class="card breeding-history-card"><view class="between history-heading"><view><view class="section-label">繁育记录</view><text>CLUTCH HISTORY · 共{{clutchTotal}}窝</text></view><text wx:if="{{clutchTotal > 2}}" class="history-toggle tap" bindtap="toggleClutches">{{showAllClutches ? '收起' : '查看全部'}}</text></view><view wx:if="{{visibleClutches.length}}"><view wx:for="{{visibleClutches}}" wx:key="id" class="clutch-row tap" data-id="{{item.id}}" data-no="{{item.clutchNo}}" bindtap="viewClutchParrots"><view class="clutch-top"><strong>第{{item.clutchNo}}窝</strong><text>{{item.hatched}} / {{item.eggs}}只出壳</text></view><view class="clutch-detail"><text>配偶：{{item.partnerText}} · 孵化：{{item.startDate}}</text></view><view class="clutch-birds"><view><text>已录入 {{item.offspringRegistered || 0}} 只幼鸟</text><text>圈号：{{item.offspringRingText}}</text></view><text class="clutch-chevron">›</text></view><button wx:if="{{item.canIntake}}" class="clutch-intake" data-id="{{item.id}}" catchtap="intakeChicks">{{item.intakeLabel}}</button><text wx:elif="{{item.hatched > 0 && item.offspringRegistered}}" class="clutch-intake-done">{{item.intakeLabel}}</text></view></view><text wx:else class="empty-clutch">暂无出窝记录</text></view>
     <view class="action-grid">
       <button wx:if="{{parrot.status === 'FOR_SALE'}}" class="button-light" disabled="{{submitting}}" bindtap="setBreeder">设置种鸟</button>
-      <button wx:if="{{parrot.status === 'FOR_SALE'}}" class="button-dark" disabled="{{submitting}}" bindtap="openSale">确认售出</button>
+      <button wx:if="{{parrot.isIntroduction && parrot.status === 'FOR_SALE' && parrot.introductionStage === 'GROWING'}}" class="button-light" disabled="{{submitting}}" bindtap="markForSale">转为待售</button>
+      <button wx:if="{{parrot.canSell}}" class="button-dark" disabled="{{submitting}}" bindtap="openSale">确认售出</button>
       <button wx:if="{{parrot.status === 'BREEDER'}}" class="button-dark" disabled="{{submitting}}" bindtap="openPairing">开始配对</button>
       <button wx:if="{{parrot.status === 'BREEDER'}}" class="button-light danger" disabled="{{submitting}}" bindtap="removeBreeder">去除种鸟</button>
       <button wx:if="{{parrot.status === 'PAIRED'}}" class="button-dark full progress-button" bindtap="openProgress">推进孵化</button>

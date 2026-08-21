@@ -43,6 +43,8 @@ Page({
   },
   goParrots(event: any) { const filter = event.currentTarget.dataset.filter || ''; wx.removeStorageSync('parrot-pro-filter'); wx.setStorageSync('parrot-pro-filter-intent', { status: filter, timestamp: Date.now() }); wx.switchTab({ url: '/pages/parrots/parrots' }) },
   goSales() { wx.navigateTo({ url: '/pages/sales-records/sales-records' }) },
+  goIntroductions() { wx.navigateTo({ url: '/pages/introductions/introductions' }) },
+  goSupplies() { wx.navigateTo({ url: '/pages/supplies/supplies' }) },
   goFeedingPlans() { wx.navigateTo({ url: '/pages/feeding-plans/feeding-plans' }) },
   goAccess() { wx.navigateTo({ url: '/pages/access/access' }) },
   unsubscribe: null as any,

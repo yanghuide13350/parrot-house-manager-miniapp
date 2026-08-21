@@ -57,10 +57,12 @@ class Store {
   getParrot(id: string) { return this.parrots.find(item => item.id === id) }
   getPair(id?: string) { return id ? this.pairs.find(item => item.id === id) : undefined }
   async createParrot(input: Omit<ParrotDoc, 'id' | 'revision' | 'priceCents'>) { const result = await repository.createParrot(input); await this.hydrate(true); return result }
+  async createIntroduction(input: Omit<ParrotDoc, 'id' | 'revision' | 'priceCents'>) { const result = await repository.createIntroduction(input); await this.hydrate(true); return result }
   async updateParrot(id: string, updates: Partial<ParrotDoc>) { const item = this.getParrot(id); if (!item) throw new Error('找不到鹦鹉档案'); const result = await repository.updateParrot(id, item.revision, updates); await this.hydrate(true); return result }
   async deleteParrot(id: string) { const item = this.getParrot(id); if (!item) throw new Error('找不到鹦鹉档案'); await repository.deleteParrot(id, item.revision); await this.hydrate(true) }
   async setBreeder(id: string) { const item = this.getParrot(id); if (!item) throw new Error('找不到鹦鹉档案'); await repository.setBreeder(id, item.revision); await this.hydrate(true) }
   async unsetBreeder(id: string) { const item = this.getParrot(id); if (!item) throw new Error('找不到鹦鹉档案'); await repository.unsetBreeder(id, item.revision); await this.hydrate(true) }
+  async markIntroductionForSale(id: string) { const item = this.getParrot(id); if (!item) throw new Error('找不到引种鸟'); await repository.markIntroductionForSale(id, item.revision); await this.hydrate(true) }
   async setFeedingPlan(id: string, feedingPlanId: string) { const item = this.getParrot(id); if (!item) throw new Error('找不到鹦鹉档案'); await repository.setParrotFeedingPlan(id, item.revision, feedingPlanId); await this.hydrate(true) }
   async pairParrots(maleId: string, femaleId: string) { const male = this.getParrot(maleId); const female = this.getParrot(femaleId); if (!male || !female) throw new Error('找不到配对档案'); await repository.pairParrots(male, female); await this.hydrate(true) }
   async cancelPair(pairId: string) { const pair = this.getPair(pairId); if (!pair) throw new Error('找不到配对记录'); await repository.cancelPair(pair); await this.hydrate(true) }
