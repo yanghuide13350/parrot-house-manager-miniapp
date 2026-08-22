@@ -2,7 +2,7 @@
 <view class="page fade-in">
   <view class="page-pad safe-top list-head"><view><view class="eyebrow">PARROT REGISTRY</view><view class="title">鹦鹉档案</view></view><button class="add-button tap" bindtap="addParrot"><app-icon name="plus" size="24"/></button></view>
   <view class="page-pad search-row">
-    <view class="search-box"><app-icon class="search-mark" name="search" size="20"/><input value="{{search}}" bindinput="inputSearch" placeholder="搜索品种、名称、圈号..."/></view>
+    <view class="search-box"><app-icon class="search-mark" name="search" size="20"/><input value="{{search}}" bindinput="inputSearch" placeholder="搜索品种、名称、脚环..."/></view>
     <button class="filter-button tap {{gender || status || filter || minPrice || maxPrice ? 'filter-active' : ''}}" bindtap="openDrawer">筛选</button>
     <button class="quick-reset tap" bindtap="quickReset">重置</button>
   </view>

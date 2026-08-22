@@ -4,13 +4,13 @@
     <view><view class="eyebrow">HATCHING MONITOR</view><view class="title">孵化管理</view></view>
     <button class="add-button tap" bindtap="openAdd"><app-icon name="plus" size="24"/></button>
   </view>
-  <view class="page-pad search-row"><view class="search-box"><app-icon class="search-mark" name="search" size="20"/><input value="{{search}}" bindinput="inputSearch" placeholder="搜索父母鸟圈号..."/></view><button class="quick-reset tap" bindtap="clearSearch">重置</button></view>
+  <view class="page-pad search-row"><view class="search-box"><app-icon class="search-mark" name="search" size="20"/><input value="{{search}}" bindinput="inputSearch" placeholder="搜索父母鸟脚环..."/></view><button class="quick-reset tap" bindtap="clearSearch">重置</button></view>
   <view class="page-pad records" wx:if="{{records.length}}">
     <view wx:for="{{records}}" wx:key="id" class="record card">
       <view class="parent-flow">
-        <view class="parent-side"><text class="bird-role">公鸟</text><image class="parent-avatar {{item.maleDetailId ? 'tap' : ''}}" src="{{item.maleImage}}" mode="aspectFill" data-id="{{item.maleDetailId}}" bindtap="viewParrot"/><strong>{{item.maleName}}</strong><small>圈号：{{item.maleRingLabel}}</small></view>
+        <view class="parent-side"><text class="bird-role">公鸟</text><image class="parent-avatar {{item.maleDetailId ? 'tap' : ''}}" src="{{item.maleImage}}" mode="aspectFill" data-id="{{item.maleDetailId}}" bindtap="viewParrot"/><strong>{{item.maleName}}</strong><small>脚环：{{item.maleRingLabel}}</small></view>
         <view class="hatching-state"><view class="record-status {{item.status === 'COMPLETED' ? 'done' : ''}}">{{item.status === 'COMPLETED' ? '已完成' : '孵化中'}}</view><strong class="state-count">{{item.hatched}} / {{item.eggs}}</strong><text class="state-label">{{item.status === 'COMPLETED' ? '任务结束' : '已出壳'}}</text></view>
-        <view class="parent-side"><text class="bird-role">母鸟</text><image class="parent-avatar {{item.femaleDetailId ? 'tap' : ''}}" src="{{item.femaleImage}}" mode="aspectFill" data-id="{{item.femaleDetailId}}" bindtap="viewParrot"/><strong>{{item.femaleName}}</strong><small>圈号：{{item.femaleRingLabel}}</small></view>
+        <view class="parent-side"><text class="bird-role">母鸟</text><image class="parent-avatar {{item.femaleDetailId ? 'tap' : ''}}" src="{{item.femaleImage}}" mode="aspectFill" data-id="{{item.femaleDetailId}}" bindtap="viewParrot"/><strong>{{item.femaleName}}</strong><small>脚环：{{item.femaleRingLabel}}</small></view>
       </view>
       <view class="record-meta"><text>品种：{{item.species}}</text><text>开始于 {{item.startDate}}</text></view>
       <view wx:if="{{item.offspringGroups.length}}" class="offspring-summary">本窝：{{item.offspringGroups[0].species}} {{item.offspringGroups[0].count}}只<text wx:if="{{item.offspringGroups.length > 1}}">等 {{item.offspringGroups.length}} 个品种</text></view>

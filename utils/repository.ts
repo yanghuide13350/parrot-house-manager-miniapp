@@ -166,7 +166,10 @@ export const repository = {
   returnSale(record: SaleRecordDoc, reason: string) { return callManagement('sales.return', { id: record.id, revision: record.revision, reason }, createRequestId('sale-return')) },
   updateFollowUp(record: SaleRecordDoc, status: SaleRecordDoc['visitStatus']) { return callManagement('sales.updateFollowUp', { id: record.id, revision: record.revision, status }, createRequestId('sale-followup')) },
   createShareToken(parrotId: string) { return callManagement('shares.create', { parrotId }, createRequestId('share-create')) },
-  revokeShareToken(token: string) { return callManagement('shares.revoke', { token }, createRequestId('share-revoke')) }
+  revokeShareToken(token: string) { return callManagement('shares.revoke', { token }, createRequestId('share-revoke')) },
+  saleCopy(parrotId: string) { return callManagement('ai.saleCopy.get', { id: parrotId }) },
+  openSaleCopy(parrotId: string) { return callManagement('ai.saleCopy.open', { id: parrotId }) },
+  enqueueSaleCopy(parrotId: string, input: any) { return callManagement('ai.saleCopy.enqueue', { id: parrotId, ...input }) }
 }
 
 function toApiMedia(media: MediaItem[] = []) { return media.filter(item => item.assetId && (item.fileID || item.url)).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID || item.url, posterFileID: item.posterFileID || item.poster || '' })) }

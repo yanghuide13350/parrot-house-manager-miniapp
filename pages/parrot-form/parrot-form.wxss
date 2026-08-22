@@ -7,6 +7,7 @@
 .media-icon { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; border: 1rpx solid #e2e8f0; border-radius: 22rpx; font-size: 38rpx; font-weight: 300; }
 .media-icon.gray { background: #f1f5f9; }
 .media-icon.green { color: #166534; background: #dcfce7; }
+.media-icon.video { color: #6d4c8f; background: #f3edfa; }
 .media-icon.dashed { color: #94a3b8; background: #f8fafc; border: 2rpx dashed #cbd5e1; }
 .media-action text { display: block; margin-top: 12rpx; }
 .media-preview { position: relative; height: 0; padding-top: 100%; overflow: hidden; border-radius: 22rpx; background: #f1f5f9; }
@@ -31,10 +32,9 @@
 .lineage-head { display: flex; align-items: center; justify-content: space-between; }
 .lineage-head .field-label { margin: 0; font-size: 19rpx; letter-spacing: 1.5rpx; }
 .lineage-actions { display: flex; align-items: center; gap: 18rpx; }
-.lineage-import { color: #2563eb; font-size: 20rpx; font-weight: 800; }
+.lineage-import { display: inline-flex; align-items: center; padding: 3rpx 0 5rpx; border-bottom: 2rpx solid #bfd9d0; color: #4f8175; font-size: 20rpx; font-weight: 900; letter-spacing: .5rpx; line-height: 1.15; }.lineage-import::before { content: '↗'; margin-right: 7rpx; color: #789f94; font-size: 23rpx; font-weight: 700; line-height: 1; }
 .lineage-reset { display: flex; align-items: center; justify-content: center; width: 34rpx; height: 34rpx; border-radius: 50%; color: #94a3b8; background: #eef2f7; font-size: 27rpx; line-height: 1; }
-.lineage-fields { display: grid; grid-template-columns: 1fr 220rpx; gap: 14rpx; margin-top: 18rpx; }
-.lineage-input { min-width: 0; height: 80rpx; min-height: 80rpx; padding: 0 18rpx; border: 1rpx solid #e2e8f0; border-radius: 18rpx; background: #fff; color: #1e293b; font-size: 22rpx; font-weight: 700; line-height: 80rpx; }
-.lineage-ring { color: #475569; }
+.lineage-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18rpx; margin-top: 18rpx; }
+.lineage-input { min-width: 0; box-sizing: border-box; font-size: 23rpx; }
 .textarea { width: 100%; min-height: 260rpx; padding: 24rpx; border: 1rpx solid #e2e8f0; border-radius: 24rpx; background: #f8fafc; color: #0f172a; font-size: 24rpx; font-weight: 700; }
 .submit { width: calc(100% - 112rpx); height: 104rpx; line-height: 104rpx; margin: 0 56rpx; font-size: 27rpx; }

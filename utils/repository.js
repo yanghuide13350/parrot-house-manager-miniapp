@@ -155,7 +155,10 @@ exports.repository = {
     returnSale(record, reason) { return (0, cloud_1.callManagement)('sales.return', { id: record.id, revision: record.revision, reason }, (0, cloud_1.createRequestId)('sale-return')); },
     updateFollowUp(record, status) { return (0, cloud_1.callManagement)('sales.updateFollowUp', { id: record.id, revision: record.revision, status }, (0, cloud_1.createRequestId)('sale-followup')); },
     createShareToken(parrotId) { return (0, cloud_1.callManagement)('shares.create', { parrotId }, (0, cloud_1.createRequestId)('share-create')); },
-    revokeShareToken(token) { return (0, cloud_1.callManagement)('shares.revoke', { token }, (0, cloud_1.createRequestId)('share-revoke')); }
+    revokeShareToken(token) { return (0, cloud_1.callManagement)('shares.revoke', { token }, (0, cloud_1.createRequestId)('share-revoke')); },
+    saleCopy(parrotId) { return (0, cloud_1.callManagement)('ai.saleCopy.get', { id: parrotId }); },
+    openSaleCopy(parrotId) { return (0, cloud_1.callManagement)('ai.saleCopy.open', { id: parrotId }); },
+    enqueueSaleCopy(parrotId, input) { return (0, cloud_1.callManagement)('ai.saleCopy.enqueue', { id: parrotId, ...input }); }
 };
 function toApiMedia(media = []) { return media.filter(item => item.assetId && (item.fileID || item.url)).map(item => ({ assetId: item.assetId, type: item.type, fileID: item.fileID || item.url, posterFileID: item.posterFileID || item.poster || '' })); }
 function cleanParrotUpdates(updates) {

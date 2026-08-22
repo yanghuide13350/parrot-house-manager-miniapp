@@ -6,7 +6,7 @@ const cloud_1 = require("../../utils/cloud");
 const navigation_1 = require("../../utils/navigation");
 const date_1 = require("../../utils/date");
 Page({
-    data: { isEdit: false, introductionMode: false, id: '', media: [], saving: false, uploading: false, focusedParentField: '', breedOptions: [], form: { breed: '', species: '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', birthDate: (0, date_1.todayDate)(), purchaseDate: (0, date_1.todayDate)(), publicIntro: '', privateNotes: '' }, father: null, mother: null, maleCandidates: [], femaleCandidates: [], genders: [{ key: types_1.GenderCode.MALE, label: '公 (Male)' }, { key: types_1.GenderCode.FEMALE, label: '母 (Female)' }, { key: types_1.GenderCode.UNKNOWN, label: '未验卡' }] },
+    data: { isEdit: false, introductionMode: false, id: '', media: [], saving: false, uploading: false, breedOptions: [], form: { breed: '', species: '', ringNumber: '', gender: types_1.GenderCode.UNKNOWN, price: '', birthDate: (0, date_1.todayDate)(), purchaseDate: (0, date_1.todayDate)(), publicIntro: '', privateNotes: '' }, father: null, mother: null, maleCandidates: [], femaleCandidates: [], genders: [{ key: types_1.GenderCode.MALE, label: '公 (Male)' }, { key: types_1.GenderCode.FEMALE, label: '母 (Female)' }, { key: types_1.GenderCode.UNKNOWN, label: '未验卡' }] },
     onLoad(options) {
         const introductionMode = options.mode === 'introduction';
         this.setData({ introductionMode });
@@ -48,15 +48,19 @@ Page({
         // 修改带入内容即转为手工资料，避免关联的库内档案被误改。
         this.setData({ [role]: { ...current, source: 'MANUAL', id: null, [key]: event.detail.value } });
     },
-    focusParentField(event) { this.setData({ focusedParentField: event.currentTarget.dataset.focus }); },
-    blurParentField() { this.setData({ focusedParentField: '' }); },
     clearParent(event) { this.setData({ [event.currentTarget.dataset.role]: null }); },
     async chooseMedia(event) {
         if (this.data.uploading)
             return;
-        const kind = event.currentTarget.dataset.kind;
+        const kind = String(event.currentTarget.dataset.kind || '');
+        const isPhoto = kind === 'photo';
+        const isVideo = kind === 'video';
         try {
-            const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] });
+            const result = await wx.chooseMedia({
+                count: isPhoto ? 9 : 1,
+                mediaType: isPhoto ? ['image'] : (isVideo ? ['video'] : ['image', 'video']),
+                sourceType: kind === 'camera' ? ['camera'] : ['album']
+            });
             const selected = (result.tempFiles || []).map((item, index) => ({ filePath: item.tempFilePath, type: item.fileType === 'video' ? 'video' : 'image', placeholderId: `uploading-${Date.now()}-${index}` }));
             if (!selected.length)
                 return;
@@ -112,14 +116,16 @@ Page({
             return;
         const normalized = String(form.ringNumber).replace(/\s+/g, '').toUpperCase();
         if (normalized && store_1.store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) {
-            wx.showToast({ title: '圈号已存在', icon: 'none' });
+            wx.showToast({ title: '脚环已存在', icon: 'none' });
             return;
         }
         if (!this.data.introductionMode && (!this.data.father || !this.data.mother || !this.data.father.species || !this.data.mother.species)) {
             wx.showToast({ title: '请配置父鸟和母鸟', icon: 'none' });
             return;
         }
-        const complete = { breed: form.breed, species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, purchaseDate: form.purchaseDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother };
+        const complete = { breed: form.breed, species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother };
+        if (this.data.introductionMode)
+            complete.purchaseDate = form.purchaseDate;
         let payload = complete;
         if (this.data.isEdit) {
             const current = store_1.store.getParrot(this.data.id);
@@ -128,7 +134,10 @@ Page({
                 return;
             }
             payload = {};
-            for (const key of ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'purchaseDate', 'publicIntro', 'privateNotes', 'father', 'mother'])
+            const editableKeys = ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother'];
+            if (this.data.introductionMode)
+                editableKeys.push('purchaseDate');
+            for (const key of editableKeys)
                 if (JSON.stringify(complete[key]) !== JSON.stringify(current[key]))
                     payload[key] = complete[key];
             if (complete.price !== current.price)

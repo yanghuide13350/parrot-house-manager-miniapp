@@ -5,7 +5,7 @@ import { backOrSwitchTab } from '../../utils/navigation'
 import { todayDate } from '../../utils/date'
 
 Page({
-  data: { isEdit: false, introductionMode: false, id: '', media: [] as MediaItem[], saving: false, uploading: false, focusedParentField: '', breedOptions: [] as string[], form: { breed: '', species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: todayDate(), purchaseDate: todayDate(), publicIntro: '', privateNotes: '' }, father: null as ParentInfo | null, mother: null as ParentInfo | null, maleCandidates: [] as any[], femaleCandidates: [] as any[], genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
+  data: { isEdit: false, introductionMode: false, id: '', media: [] as MediaItem[], saving: false, uploading: false, breedOptions: [] as string[], form: { breed: '', species: '', ringNumber: '', gender: GenderCode.UNKNOWN, price: '', birthDate: todayDate(), purchaseDate: todayDate(), publicIntro: '', privateNotes: '' }, father: null as ParentInfo | null, mother: null as ParentInfo | null, maleCandidates: [] as any[], femaleCandidates: [] as any[], genders: [{ key: GenderCode.MALE, label: '公 (Male)' }, { key: GenderCode.FEMALE, label: '母 (Female)' }, { key: GenderCode.UNKNOWN, label: '未验卡' }] },
   onLoad(options: any) {
     const introductionMode = options.mode === 'introduction'
     this.setData({ introductionMode })
@@ -43,14 +43,18 @@ Page({
     // 修改带入内容即转为手工资料，避免关联的库内档案被误改。
     this.setData({ [role]: { ...current, source: 'MANUAL', id: null, [key]: event.detail.value } })
   },
-  focusParentField(event: any) { this.setData({ focusedParentField: event.currentTarget.dataset.focus }) },
-  blurParentField() { this.setData({ focusedParentField: '' }) },
   clearParent(event: any) { this.setData({ [event.currentTarget.dataset.role]: null }) },
   async chooseMedia(event: any) {
     if (this.data.uploading) return
-    const kind = event.currentTarget.dataset.kind
+    const kind = String(event.currentTarget.dataset.kind || '')
+    const isPhoto = kind === 'photo'
+    const isVideo = kind === 'video'
     try {
-      const result = await wx.chooseMedia({ count: kind === 'local' ? 9 : 1, mediaType: ['image', 'video'], sourceType: kind === 'local' ? ['album'] : ['camera'] })
+      const result = await wx.chooseMedia({
+        count: isPhoto ? 9 : 1,
+        mediaType: isPhoto ? ['image'] : (isVideo ? ['video'] : ['image', 'video']),
+        sourceType: kind === 'camera' ? ['camera'] : ['album']
+      })
       const selected = (result.tempFiles || []).map((item: any, index: number) => ({ filePath: item.tempFilePath, type: item.fileType === 'video' ? 'video' as const : 'image' as const, placeholderId: `uploading-${Date.now()}-${index}` }))
       if (!selected.length) return
       const placeholders: MediaItem[] = selected.map(item => ({ assetId: item.placeholderId, type: item.type, url: '', uploading: true }))
@@ -89,15 +93,18 @@ Page({
     if (!Number.isFinite(Number(form.price)) || Number(form.price) < 0) { wx.showToast({ title: '请输入正确价格', icon: 'none' }); return }
     if (this.data.saving || this.data.uploading) return
     const normalized = String(form.ringNumber).replace(/\s+/g, '').toUpperCase()
-    if (normalized && store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) { wx.showToast({ title: '圈号已存在', icon: 'none' }); return }
+    if (normalized && store.parrots.some(item => item.id !== this.data.id && item.ringNumber.replace(/\s+/g, '').toUpperCase() === normalized)) { wx.showToast({ title: '脚环已存在', icon: 'none' }); return }
     if (!this.data.introductionMode && (!this.data.father || !this.data.mother || !this.data.father.species || !this.data.mother.species)) { wx.showToast({ title: '请配置父鸟和母鸟', icon: 'none' }); return }
-    const complete: any = { breed: form.breed, species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, purchaseDate: form.purchaseDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother }
+    const complete: any = { breed: form.breed, species: form.species, ringNumber: form.ringNumber, gender: form.gender, price: Number(form.price), birthDate: form.birthDate, media: this.data.media, publicIntro: form.publicIntro, privateNotes: form.privateNotes, father: this.data.father, mother: this.data.mother }
+    if (this.data.introductionMode) complete.purchaseDate = form.purchaseDate
     let payload = complete
     if (this.data.isEdit) {
       const current = store.getParrot(this.data.id)
       if (!current) { wx.showToast({ title: '档案不存在，请刷新后重试', icon: 'none' }); return }
       payload = {}
-      for (const key of ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'purchaseDate', 'publicIntro', 'privateNotes', 'father', 'mother']) if (JSON.stringify(complete[key]) !== JSON.stringify((current as any)[key])) payload[key] = complete[key]
+      const editableKeys = ['breed', 'species', 'ringNumber', 'gender', 'birthDate', 'publicIntro', 'privateNotes', 'father', 'mother']
+      if (this.data.introductionMode) editableKeys.push('purchaseDate')
+      for (const key of editableKeys) if (JSON.stringify(complete[key]) !== JSON.stringify((current as any)[key])) payload[key] = complete[key]
       if (complete.price !== current.price) payload.price = complete.price
       const mediaKey = (items: MediaItem[]) => JSON.stringify(items.map(item => ({ assetId: item.assetId, type: item.type })))
       if (mediaKey(complete.media) !== mediaKey(current.media || [])) payload.media = complete.media

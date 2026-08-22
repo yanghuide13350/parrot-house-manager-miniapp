@@ -7,6 +7,7 @@ exports.createRequestId = createRequestId;
 exports.getSession = getSession;
 exports.callManagement = callManagement;
 exports.resolvePublicShare = resolvePublicShare;
+exports.streamSaleCopy = streamSaleCopy;
 exports.uploadMedia = uploadMedia;
 const config_1 = require("../config");
 const SESSION_KEY = 'parrot-pro-api-session-v1';
@@ -64,8 +65,39 @@ async function getSession() {
         reviewNote: result.reviewNote || ''
     };
 }
-function callManagement(action, input = {}, requestId = '') { return request('/api/manage', 'POST', { action, input, requestId }); }
+function callManagement(action, input = {}, requestId = '', timeout = 30000) { return request('/api/manage', 'POST', { action, input, requestId }, true, timeout); }
 function resolvePublicShare(shareToken) { return request(`/api/public/shares/${encodeURIComponent(shareToken)}`, 'GET', undefined, false); }
+function streamSaleCopy(input, onEvent, onFailure) {
+    if (!apiReady) {
+        onFailure(new ApiError('UNAVAILABLE', 'API 服务地址尚未配置'));
+        return null;
+    }
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    const consume = (chunk) => {
+        buffer += decoder.decode(chunk, { stream: true });
+        const events = buffer.split(/\r?\n\r?\n/);
+        buffer = events.pop() || '';
+        for (const event of events) {
+            const data = event.split(/\r?\n/).filter(line => line.startsWith('data:')).map(line => line.slice(5).trim()).join('');
+            if (!data)
+                continue;
+            try {
+                onEvent(JSON.parse(data));
+            }
+            catch ( /* Wait for the next complete server event. */_a) { /* Wait for the next complete server event. */ }
+        }
+    };
+    const headers = { 'content-type': 'application/json' };
+    if (token())
+        headers.Authorization = `Bearer ${token()}`;
+    const task = wx.request({ url: apiUrl('/api/ai/sale-copy/stream'), method: 'POST', data: input, header: headers, timeout: 125000, responseType: 'arraybuffer', enableChunked: true, success: (response) => {
+            if (response.statusCode >= 400)
+                onFailure(new ApiError('AI_UNAVAILABLE', 'AI 服务暂时不可用，请稍后重试'));
+        }, fail: (error) => onFailure(new ApiError('UNAVAILABLE', error.errMsg || '实时生成连接已断开')) });
+    task.onChunkReceived((result) => consume(result.data));
+    return task;
+}
 function readChunk(filePath, position, length) {
     return new Promise((resolve, reject) => wx.getFileSystemManager().readFile({ filePath, position, length, success: (result) => resolve(result.data), fail: (error) => reject(new ApiError('MEDIA_REJECTED', error.errMsg || '无法读取媒体文件')) }));
 }

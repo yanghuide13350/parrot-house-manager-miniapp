@@ -6,18 +6,22 @@ const navigation_1 = require("../../utils/navigation");
 const date_1 = require("../../utils/date");
 const config_1 = require("../../config");
 const repository_1 = require("../../utils/repository");
+const cloud_1 = require("../../utils/cloud");
 const SHARE_CACHE_KEY = 'parrot-pro-share-cache';
 const ageDays = (birthDate) => Math.max(0, Math.floor((Date.now() - new Date(`${birthDate}T00:00:00+08:00`).getTime()) / 86400000));
 const planStart = (plan) => Number(plan.ageFromMonths || 0) * 31 + Number(plan.ageFromDays || 0);
 const planEnd = (plan) => Number(plan.ageToMonths || 0) * 31 + Number(plan.ageToDays || 0);
 Page({
-    data: { parrot: null, genderLabel: '', statusLabel: '', media: [], clutches: [], visibleClutches: [], clutchTotal: 0, showAllClutches: false, activeIndex: 0, showPairing: false, showSale: false, showProgress: false, showFeedingPlan: false, feedingPlan: null, eligible: [], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
-    onLoad(options) { wx.hideShareMenu(); this.id = options.id; this.syncTopBar(); this.restoreShareState(); this.unsubscribe = store_1.store.subscribe(() => this.refresh()); this.refresh(); },
-    onUnload() { if (this.unsubscribe)
+    data: { parrot: null, genderLabel: '', statusLabel: '', media: [], clutches: [], visibleClutches: [], clutchTotal: 0, showAllClutches: false, activeIndex: 0, showPairing: false, showSale: false, showProgress: false, showFeedingPlan: false, showSaleCopy: false, showSaleCopyOptions: true, saleCopyLoading: false, saleCopyPending: false, saleCopyStatus: null, saleCopy: null, saleCopyStreamText: '', saleCopyStyle: 'PROFESSIONAL', saleCopyStyleIndex: 0, saleCopyTraits: { tameness: '', raisingMethod: '', independentFeeding: '', featherCondition: '' }, saleCopyNote: '', saleCopyStyles: [{ key: 'PROFESSIONAL', label: '专业' }, { key: 'CONCISE', label: '简洁' }, { key: 'COLLOQUIAL', label: '口语' }, { key: 'STORY', label: '故事' }, { key: 'HUMOR', label: '幽默' }], saleCopyTraitGroups: [{ key: 'tameness', label: '亲人程度', options: [{ key: 'TAME', label: '亲人' }, { key: 'SHY', label: '不亲人' }] }, { key: 'raisingMethod', label: '饲养方式', options: [{ key: 'HAND_RAISED', label: '手养' }, { key: 'CAGE_RAISED', label: '笼养' }] }, { key: 'independentFeeding', label: '进食情况', options: [{ key: 'INDEPENDENT', label: '独立吃食' }, { key: 'LEARNING', label: '学吃食' }, { key: 'ASSISTED', label: '辅助喂养' }] }, { key: 'featherCondition', label: '羽况', options: [{ key: 'CLEAN', label: '无杂毛' }, { key: 'MIXED', label: '有杂毛' }] }], feedingPlan: null, eligible: [], selectedMate: '', eggCount: '3', buyer: '', price: '', contact: '', shareToken: '', shareUrl: '', shareExpiryLabel: '', submitting: false, detailTopStyle: '', detailActionsStyle: '' },
+    onLoad(options) { wx.hideShareMenu(); this.id = options.id; this.syncTopBar(); this.restoreShareState(); this.unsubscribe = store_1.store.subscribe(() => this.refresh()); this.refresh(); this.loadSaleCopyStatus(); },
+    onUnload() { this.continueSaleCopyInBackground(); this.stopSaleCopyPolling(); if (this.unsubscribe)
         this.unsubscribe(); },
     onShow() { this.syncTopBar(); this.restoreShareState(); if (this.id) {
         this.refresh();
         this.loadFeedingPlans();
+        this.loadSaleCopyStatus();
+        if (this.data.showSaleCopy && this.data.saleCopyPending)
+            this.watchSaleCopy();
     } },
     syncTopBar() {
         const menu = typeof wx.getMenuButtonBoundingClientRect === 'function' ? wx.getMenuButtonBoundingClientRect() : null;
@@ -65,7 +69,7 @@ Page({
     },
     refresh() { const source = store_1.store.getParrot(this.id); if (!source)
         return; const parrot = { ...source, ringLabel: source.ringNumber || '需补充', isIntroduction: source.recordSource === 'INTRODUCTION', canSell: source.status === types_1.ParrotStatusCode.FOR_SALE && (source.recordSource !== 'INTRODUCTION' || source.introductionStage === 'FOR_SALE') }; const statusLabel = parrot.isIntroduction && parrot.status === types_1.ParrotStatusCode.FOR_SALE && parrot.introductionStage === 'GROWING' ? '待成长' : ''; const items = (parrot.media || []).filter(item => item.url); const media = items.length ? items : [{ type: 'image', url: parrot.image }], clutches = store_1.store.hatchingRecords.filter(item => item.maleId === this.id || item.femaleId === this.id).sort((a, b) => { const paired = String(a.pairingDate || a.startDate || a.createdAt || '').localeCompare(String(b.pairingDate || b.startDate || b.createdAt || '')); if (paired)
-        return paired; const hatched = String(a.startDate || '').localeCompare(String(b.startDate || '')); return hatched || String(a.createdAt || '').localeCompare(String(b.createdAt || '')); }).map((item, index) => { const isMale = item.maleId === this.id, partnerSpecies = isMale ? item.femaleSpecies : item.maleSpecies, partnerRing = isMale ? item.femaleRingNumber : item.maleRingNumber, registered = Number(item.offspringRegistered || 0), rings = (item.offspring || []).map(chick => chick.ringNumber || '未戴环'); return { ...item, clutchNo: index + 1, partnerText: `${partnerSpecies || '配偶'}${partnerRing ? `｜${partnerRing}` : ''}`, pairingDateLabel: item.pairingDate ? String(item.pairingDate).slice(0, 10) : '未记录', offspringRingText: rings.length ? rings.join('、') : '暂无圈号', canIntake: item.status === 'COMPLETED' && item.hatched > 0 && registered === 0, intakeLabel: registered ? `已录入 ${registered} / ${item.hatched} 只幼鸟` : `录入本窝 ${item.hatched} 只幼鸟` }; }); const visibleClutches = this.data.showAllClutches ? clutches : clutches.slice(-2); this.setData({ parrot, statusLabel, genderLabel: types_1.GENDER_LABEL[parrot.gender], media, clutches, visibleClutches, clutchTotal: clutches.length, price: String(parrot.price || '') }); },
+        return paired; const hatched = String(a.startDate || '').localeCompare(String(b.startDate || '')); return hatched || String(a.createdAt || '').localeCompare(String(b.createdAt || '')); }).map((item, index) => { const isMale = item.maleId === this.id, partnerSpecies = isMale ? item.femaleSpecies : item.maleSpecies, partnerRing = isMale ? item.femaleRingNumber : item.maleRingNumber, registered = Number(item.offspringRegistered || 0), rings = (item.offspring || []).map(chick => chick.ringNumber || '未佩戴脚环'); return { ...item, clutchNo: index + 1, partnerText: `${partnerSpecies || '配偶'}${partnerRing ? `｜${partnerRing}` : ''}`, pairingDateLabel: item.pairingDate ? String(item.pairingDate).slice(0, 10) : '未记录', offspringRingText: rings.length ? rings.join('、') : '暂无脚环', canIntake: item.status === 'COMPLETED' && item.hatched > 0 && registered === 0, intakeLabel: registered ? `已录入 ${registered} / ${item.hatched} 只幼鸟` : `录入本窝 ${item.hatched} 只幼鸟` }; }); const visibleClutches = this.data.showAllClutches ? clutches : clutches.slice(-2); this.setData({ parrot, statusLabel, genderLabel: types_1.GENDER_LABEL[parrot.gender], media, clutches, visibleClutches, clutchTotal: clutches.length, price: String(parrot.price || '') }); },
     toggleClutches() { this.setData({ showAllClutches: !this.data.showAllClutches }, () => this.refresh()); },
     swiperChange(event) { this.setData({ activeIndex: event.detail.current }); },
     async loadFeedingPlans() { try {
@@ -161,6 +165,111 @@ Page({
     closeSale() { if (!this.data.submitting)
         this.setData({ showSale: false }); },
     inputSale(event) { this.setData({ [event.currentTarget.dataset.key]: event.detail.value }); },
+    async loadSaleCopyStatus() { try {
+        this.setData({ saleCopyStatus: await repository_1.repository.saleCopy(this.id) });
+    }
+    catch ( /* The main detail page remains usable if the optional AI status cannot load. */_a) { /* The main detail page remains usable if the optional AI status cannot load. */ } },
+    async openSaleCopy() { const existing = this.data.saleCopyStatus || await repository_1.repository.saleCopy(this.id); const styleState = (copy) => { const index = this.data.saleCopyStyles.findIndex((item) => item.key === (copy === null || copy === void 0 ? void 0 : copy.style)); return index >= 0 ? { saleCopyStyle: copy.style, saleCopyStyleIndex: index } : { saleCopyStyle: 'PROFESSIONAL', saleCopyStyleIndex: 0 }; }; if (existing && existing.status === 'READY') {
+        const saleCopy = await repository_1.repository.openSaleCopy(this.id);
+        this.setData({ showSaleCopy: true, showSaleCopyOptions: false, saleCopyPending: false, saleCopy, saleCopyStatus: saleCopy, ...styleState(saleCopy) });
+        return;
+    } if (existing && (existing.status === 'PENDING' || existing.status === 'PROCESSING')) {
+        this.setData({ showSaleCopy: true, showSaleCopyOptions: false, saleCopyPending: true, saleCopy: null, saleCopyStatus: existing, ...styleState(existing) }, () => this.watchSaleCopy());
+        return;
+    } this.setData({ showSaleCopy: true, showSaleCopyOptions: true, saleCopyPending: false, saleCopy: null, saleCopyLoading: false, saleCopyStyle: 'PROFESSIONAL', saleCopyStyleIndex: 0, saleCopyTraits: { tameness: '', raisingMethod: '', independentFeeding: '', featherCondition: '' }, saleCopyNote: '' }); },
+    stopSaleCopyPolling() { if (this.saleCopyPollTimer)
+        clearTimeout(this.saleCopyPollTimer); this.saleCopyPollTimer = null; },
+    watchSaleCopy() {
+        this.stopSaleCopyPolling();
+        const poll = async () => {
+            if (!this.data.showSaleCopy || !this.data.saleCopyPending || this.saleCopyPolling)
+                return;
+            this.saleCopyPolling = true;
+            let finished = false;
+            try {
+                const status = await repository_1.repository.saleCopy(this.id);
+                if (!this.data.showSaleCopy)
+                    return;
+                if (status && status.status === 'READY') {
+                    const saleCopy = await repository_1.repository.openSaleCopy(this.id);
+                    if (!this.data.showSaleCopy)
+                        return;
+                    finished = true;
+                    this.setData({ saleCopyPending: false, saleCopy: saleCopy, saleCopyStatus: saleCopy, showSaleCopyOptions: false });
+                    return;
+                }
+                if (status && status.status === 'FAILED') {
+                    finished = true;
+                    this.setData({ saleCopyPending: false, saleCopyStatus: status, showSaleCopyOptions: true });
+                    wx.showToast({ title: '生成未完成，请换一版重试', icon: 'none' });
+                    return;
+                }
+                this.setData({ saleCopyStatus: status });
+            }
+            catch ( /* Keep the dialog open and try again while the user is waiting. */_a) { /* Keep the dialog open and try again while the user is waiting. */ }
+            finally {
+                this.saleCopyPolling = false;
+                if (!finished && this.data.showSaleCopy && this.data.saleCopyPending)
+                    this.saleCopyPollTimer = setTimeout(poll, 2500);
+            }
+        };
+        poll();
+    },
+    continueSaleCopyInBackground() {
+        const task = this.saleCopyStreamTask;
+        if (!task)
+            return;
+        task.abort();
+        this.saleCopyStreamTask = null;
+        const parrot = this.data.parrot;
+        if (parrot)
+            repository_1.repository.enqueueSaleCopy(parrot.id, { style: this.data.saleCopyStyle, traits: this.data.saleCopyTraits, note: this.data.saleCopyNote }).catch(() => undefined);
+    },
+    closeSaleCopy() { if (!this.data.saleCopyLoading) {
+        this.continueSaleCopyInBackground();
+        this.stopSaleCopyPolling();
+        this.setData({ showSaleCopy: false, saleCopyStreamText: '' });
+    } },
+    chooseSaleCopyTrait(event) { const key = String(event.currentTarget.dataset.group || ''), value = String(event.currentTarget.dataset.value || ''); if (!key || !value)
+        return; const current = this.data.saleCopyTraits[key] || ''; this.setData({ [`saleCopyTraits.${key}`]: current === value ? '' : value }); },
+    inputSaleCopyNote(event) { this.setData({ saleCopyNote: event.detail.value }); },
+    chooseSaleCopyStyle(event) { const style = String(event.currentTarget.dataset.style || ''); const index = this.data.saleCopyStyles.findIndex((item) => item.key === style); if (style && index >= 0)
+        this.setData({ saleCopyStyle: style, saleCopyStyleIndex: index }); },
+    toggleSaleCopyOptions() { this.setData({ showSaleCopyOptions: !this.data.showSaleCopyOptions }); },
+    async generateSaleCopy() {
+        const parrot = this.data.parrot;
+        if (!parrot || this.data.saleCopyLoading)
+            return;
+        this.stopSaleCopyPolling();
+        this.continueSaleCopyInBackground();
+        this.saleCopyStreamFailed = false;
+        this.setData({ saleCopyLoading: true, saleCopy: null, saleCopyPending: true, saleCopyStreamText: '', showSaleCopyOptions: false });
+        const input = { id: parrot.id, style: this.data.saleCopyStyle, traits: this.data.saleCopyTraits, note: this.data.saleCopyNote };
+        const fallback = () => {
+            if (this.saleCopyStreamFailed)
+                return;
+            this.saleCopyStreamFailed = true;
+            this.saleCopyStreamTask = null;
+            repository_1.repository.enqueueSaleCopy(parrot.id, input).then(result => this.setData({ saleCopyStatus: result, saleCopyPending: true }, () => this.watchSaleCopy())).catch(() => undefined);
+        };
+        this.saleCopyStreamTask = (0, cloud_1.streamSaleCopy)(input, (event) => {
+            if (event.type === 'delta') {
+                const saleCopyStreamText = `${this.data.saleCopyStreamText}${event.value || ''}`;
+                this.setData({ saleCopyStreamText, saleCopy: { title: '', content: saleCopyStreamText } });
+            }
+            if (event.type === 'done') {
+                this.saleCopyStreamTask = null;
+                this.setData({ saleCopyPending: false, saleCopy: event.saleCopy, saleCopyStatus: event.saleCopy, saleCopyStreamText: '' });
+            }
+            if (event.type === 'error') {
+                wx.showToast({ title: '实时生成未完成，已转后台继续', icon: 'none' });
+                fallback();
+            }
+        }, fallback);
+        this.setData({ saleCopyLoading: false });
+    },
+    copySaleCopy() { const result = this.data.saleCopy; if (!result)
+        return; wx.setClipboardData({ data: `${result.title}\n\n${result.content}` }); },
     async confirmSale() { if (!this.data.buyer || !this.data.price) {
         wx.showToast({ title: '请完整填写销售信息', icon: 'none' });
         return;
@@ -245,5 +354,9 @@ Page({
     onShareAppMessage() { var _a, _b; const token = this.data.shareToken; return { title: `${((_a = this.data.parrot) === null || _a === void 0 ? void 0 : _a.species) || '鹦鹉'} · Parrot Pro`, path: token ? `/pages/share/share?token=${encodeURIComponent(token)}` : '/pages/share/share', imageUrl: (_b = this.data.parrot) === null || _b === void 0 ? void 0 : _b.image }; },
     noop() { },
     id: '',
-    unsubscribe: null
+    unsubscribe: null,
+    saleCopyPollTimer: null,
+    saleCopyPolling: false,
+    saleCopyStreamTask: null,
+    saleCopyStreamFailed: false
 });
